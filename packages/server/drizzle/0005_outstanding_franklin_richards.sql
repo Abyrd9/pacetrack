@@ -1,0 +1,2 @@
+ALTER TABLE "account_groups" ADD COLUMN "parent_group_id" text;--> statement-breakpoint
+ALTER TABLE "account_groups" ADD CONSTRAINT "account_groups_parent_group_id_account_groups_id_fk" FOREIGN KEY ("parent_group_id") REFERENCES "public"."account_groups"("id") ON DELETE no action ON UPDATE no action;

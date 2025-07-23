@@ -1,0 +1,138 @@
+services:
+  postgres:
+    image: postgres:16
+    container_name: pacetrack-postgres
+    restart: always
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      POSTGRES_DB: ${POSTGRES_DB:-pacetrack}
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+
+  minio:
+    image: minio/minio
+    container_name: pacetrack-minio
+    restart: always
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-minioadmin}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-minioadmin}
+    command: server /data --console-address ":9001"
+    volumes:
+      - minio-data:/data
+
+  # One-off init container: makes sure the default bucket exists so that
+  # application code can immediately write objects without hitting
+  # `NoSuchBucket` errors during local development & tests.
+  minio-create-bucket:
+    image: minio/mc
+    depends_on:
+      - minio
+    entrypoint: >
+      /bin/sh -c "\
+        # Wait a moment for MinIO to start accepting connections\n\
+        sleep 5 && \
+        # Configure an alias pointing at the MinIO server\n\
+        mc alias set local http://minio:9000 ${MINIO_ROOT_USER:-minioadmin} ${MINIO_ROOT_PASSWORD:-minioadmin} && \
+        # Create the bucket if it doesn't already exist (ignore-existing)\n\
+        mc mb --ignore-existing local/pacetrack-storage && \
+        echo '✅ Bucket pacetrack-storage ready'"
+    volumes:
+      - minio-data:/data
+    restart: "no"
+
+  stripe-mock:
+    image: stripe/stripe-mock:latest
+    container_name: pacetrack-stripe-mock
+    restart: unless-stopped
+    ports:
+      - "12111:12111" # HTTP
+      - "12112:12112" # HTTPS (self-signed)
+    command: ["-http-port", "12111", "-https-port", "12112"]
+
+  mailpit:
+    image: axllent/mailpit:latest
+    container_name: pacetrack-mailpit
+    restart: unless-stopped
+    ports:
+      - "1025:1025"   # SMTP
+      - "8025:8025"   # Web UI
+
+  redis:
+    image: redis:7-alpine
+    container_name: pacetrack-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    command: redis-server --appendonly yes
+
+  # Application Services (optional - use profiles to run)
+  server:
+    profiles: ["app", "server-only"]
+    build:
+      context: .
+      dockerfile: packages/server/Dockerfile
+    container_name: pacetrack-server
+    restart: unless-stopped
+    ports:
+      - "4000:4000"
+    environment:
+      NODE_ENV: development
+      PORT: 4000
+      SESSION_SECRET: 123_frhjsdaljdzzxxuuu
+      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/pacetrack
+      REDIS_URL: redis://localhost:6379
+      RESEND_API_KEY: re_1234567890
+      STRIPE_SECRET_KEY: sk_test_123
+      STRIPE_API_BASE: http://localhost:12111
+      STRIPE_WEBHOOK_SECRET: whsec_mocked
+      STRIPE_PRICE_ID: price_123
+    depends_on:
+      - postgres
+      - redis
+      - minio
+      - stripe-mock
+      - mailpit
+    volumes:
+      # Mount source code for hot reloading in development
+      - .:/app
+      - /app/node_modules
+      - /app/packages/server/node_modules
+      - /app/packages/schema/node_modules
+      - /app/packages/server/dist
+
+  web-app:
+    profiles: ["app", "web-only"]
+    build:
+      context: .
+      dockerfile: packages/web-app/Dockerfile
+    container_name: pacetrack-web-app
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      NODE_ENV: development
+      PORT: 3000
+      VITE_API_PUBLIC_URL: http://localhost:4000
+    depends_on:
+      - server
+    volumes:
+      # Mount source code for hot reloading in development
+      - .:/app
+      - /app/node_modules
+      - /app/packages/web-app/node_modules
+      - /app/packages/schema/node_modules
+      - /app/packages/server/node_modules
+      - /app/packages/web-app/build
+
+volumes:
+  postgres-data:
+  minio-data:
+  redis-data: 

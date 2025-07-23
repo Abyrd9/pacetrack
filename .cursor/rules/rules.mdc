@@ -1,0 +1,803 @@
+---
+alwaysApply: true
+---
+## Session Management (Redis)
+
+### Session Schema
+
+```typescript
+{
+  id: string;                          // Session ID
+  secret_hash: string;                 // SHA-256 hash of session token
+  
+  // Current active identity
+  user_id: string;                     // Active User
+  account_id: string;                  // Active Account
+  tenant_id: string;                   // Active Tenant
+  role_id: string;                     // Active Role
+  
+  // Available identities for quick switching
+  active_accounts: Array<{
+    account_id: string;
+    tenant_id: string;
+    role_id: string;
+  }>;
+  
+  // Device tracking
+  user_agent: string;                  // Browser/client info
+  ip_address: string;                  // IP address
+  device_fingerprint: string;          // Device identifier
+  
+  // Timestamps
+  expires_at: number;                  // Unix timestamp
+  created_at: number;                  // Unix timestamp
+  last_verified_at: number;            // Unix timestamp
+  revoked_at: number | null;           // Unix timestamp or null
+}
+```
+
+### Session Features
+
+**Active Session Tracking:**
+- Main identity: `user_id`, `account_id`, `tenant_id`, `role_id`
+- `active_accounts` array: All account/tenant combinations available in this session
+- User can quickly switch between active accounts/tenants without re-authenticating
+
+**Device Tracking:**
+- `user_agent`: Browser/app information
+- `ip_address`: IP address of the device
+- `device_fingerprint`: Unique device identifier
+- This enables "Where you're logged in" features
+- Users can list all their active sessions
+- Users can revoke sessions remotely
+
+**Session Lifecycle:**
+- **Creation**: On sign-in or sign-up
+- **Validation**: On every authenticated request
+- **Renewal**: Rolling 30-day expiration (extends when <15 days remain)
+- **Revocation**: Manual logout or security events
+- **Cleanup**: Automatic removal of expired sessions
+
+### Session Operations
+
+1. **Create Session**
+   - When: User signs in or signs up
+   - Creates session with main account/tenant
+   - Populates `active_accounts` with all available account/tenant combinations
+
+2. **Switch Account**
+   - Changes `account_id`, `tenant_id`, `role_id` to a different combination from `active_accounts`
+   - No re-authentication needed
+
+3. **Switch Tenant**
+   - Changes `tenant_id` and `role_id` while keeping same `account_id`
+   - Common for users in multiple organizations
+
+4. **Link Account**
+   - Adds new account/tenant combinations to `active_accounts`
+   - Allows switching to newly linked account
+
+5. **Create Account**
+   - Creates new Account + Personal Tenant
+   - Adds to `active_accounts` in current session
+
+6. **Create Tenant**
+   - Creates new Tenant for current Account
+   - Adds new account/tenant combination to `active_accounts`
+
+---
+
+## Common Use Cases
+
+### Use Case 1: Personal + Company Email
+
+**Setup:**
+- User creates account with personal email → Creates User A, Account 1, Personal Tenant 1
+- User adds company email → Creates Account 2 under User A, Personal Tenant 2
+- Company admin invites Account 2 to Company Tenant
+- AccountMetadata now has:
+  - Account 1 → Personal Tenant 1 (owner)
+  - Account 2 → Personal Tenant 2 (owner)
+  - Account 2 → Company Tenant (member)
+
+**Session:**
+```typescript
+{
+  user_id: "user_a",
+  account_id: "account_2",           // Currently using company email
+  tenant_id: "company_tenant",       // Currently in company workspace
+  role_id: "member",
+  active_accounts: [
+    { account_id: "account_1", tenant_id: "personal_tenant_1", role_id: "owner" },
+    { account_id: "account_2", tenant_id: "personal_tenant_2", role_id: "owner" },
+    { account_id: "account_2", tenant_id: "company_tenant", role_id: "member" }
+  ]
+}
+```
+
+### Use Case 2: Freelancer with Multiple Clients
+
+**Setup:**
+- User creates account → User A, Account 1, Personal Tenant 1
+- Client 1 invites Account 1 to Client 1 Tenant (role: external)
+- Client 2 invites Account 1 to Client 2 Tenant (role: external)
+- Client 3 invites Account 1 to Client 3 Tenant (role: external)
+
+**Session:**
+```typescript
+{
+  user_id: "user_a",
+  account_id: "account_1",           // Same account for all
+  tenant_id: "client_2_tenant",      // Currently working on Client 2 project
+  role_id: "external",
+  active_accounts: [
+    { account_id: "account_1", tenant_id: "personal_tenant_1", role_id: "owner" },
+    { account_id: "account_1", tenant_id: "client_1_tenant", role_id: "external" },
+    { account_id: "account_1", tenant_id: "client_2_tenant", role_id: "external" },
+    { account_id: "account_1", tenant_id: "client_3_tenant", role_id: "external" }
+  ]
+}
+```
+
+### Use Case 3: Multiple Roles in Same Organization
+
+**Setup:**
+- User creates account → User A, Account 1 (admin@company.com), Personal Tenant 1
+- User creates second account → Account 2 (teamlead@company.com) under User A
+- User creates third account → Account 3 (personal@company.com) under User A
+- All three accounts are invited to Company Tenant with different roles
+
+**Session:**
+```typescript
+{
+  user_id: "user_a",
+  account_id: "account_1",           // Using admin account
+  tenant_id: "company_tenant",       // In company workspace
+  role_id: "owner",
+  active_accounts: [
+    { account_id: "account_1", tenant_id: "personal_tenant_1", role_id: "owner" },
+    { account_id: "account_1", tenant_id: "company_tenant", role_id: "owner" },
+    { account_id: "account_2", tenant_id: "personal_tenant_2", role_id: "owner" },
+    { account_id: "account_2", tenant_id: "company_tenant", role_id: "team_lead" },
+    { account_id: "account_3", tenant_id: "personal_tenant_3", role_id: "owner" },
+    { account_id: "account_3", tenant_id: "company_tenant", role_id: "member" }
+  ]
+}
+```
+
+---
+
+## API Route Patterns
+
+### Route Organization
+
+API routes in `packages/server/src/api-routes/` are organized by domain:
+
+- `auth/` - Authentication (sign-in, sign-up, sign-out, password reset)
+- `account/` - Account management (create, update, delete, link accounts)
+- `session/` - Session management (list, switch, revoke)
+- `tenant/` - Tenant management (create, update, delete, invite users)
+- `user/` - User management (create, update, delete)
+- `account-group/` - Account group management
+
+### Route Types (`packages/schema/src/routes-schema/`)
+
+Each route has a corresponding types file with:
+
+```typescript
+// Example: account.create.types.ts
+export const ACCOUNT_CREATE_ROUTE = {
+  method: 'POST',
+  path: '/api/account/create',
+  summary: 'Create a new account',
+  request: AccountCreateRequestSchema,
+  responses: {
+    200: AccountCreateResponseSchema,
+    400: ErrorResponseSchema,
+  },
+};
+
+export type AccountCreateRouteResponse = RouteResponse<typeof ACCOUNT_CREATE_ROUTE>;
+```
+
+**Auto-Generated Index:**
+- `packages/schema/src/routes-schema/index.ts` is auto-generated
+- Run `bun run generate-route-definitions` to update
+- Creates `ROUTE_DEFINITIONS` object with all routes
+
+### Middleware Stack
+
+Every authenticated request goes through:
+
+1. **CORS Middleware** - Handles cross-origin requests
+2. **CSRF Protection** - Validates CSRF tokens
+3. **Rate Limiting** - Redis-backed rate limiting
+4. **Session Validation** - Validates session token, sets context
+5. **Route Handler** - Executes business logic
+
+### Request Context
+
+After middleware, every request has:
+
+```typescript
+c.get('session');  // Current session
+c.get('user');     // Current user
+c.get('account');  // Current account
+c.get('tenant');   // Current tenant
+c.get('role');     // Current role
+```
+
+---
+
+## Database Patterns
+
+### Soft Deletes
+
+All tables use soft deletes:
+- `deleted_at` timestamp field
+- Never hard delete records
+- Allows data recovery and audit trails
+
+### Timestamps
+
+All tables have:
+- `created_at` - Auto-set on creation
+- `updated_at` - Must be manually updated
+- `deleted_at` - Set on soft delete
+
+### Relations
+
+Use Drizzle ORM relations:
+- Defined in `*-relations.ts` files
+- Enables `.with()` queries for eager loading
+- Example: `db.query.account_table.findFirst({ with: { user: true } })`
+
+---
+
+## Key Operations
+
+### Creating a New Account
+
+```typescript
+// 1. Create Account
+const newAccount = await db.insert(account_table).values({
+  email: "user@example.com",
+  password: hashedPassword,
+  user_id: userId,
+}).returning();
+
+// 2. Create Personal Tenant
+const tenant = await db.insert(tenant_table).values({
+  name: "Personal",
+  kind: "personal",
+  created_by: userId,
+}).returning();
+
+// 3. Create AccountMetadata (links Account → Tenant with Role)
+await db.insert(account_metadata_table).values({
+  user_id: userId,
+  account_id: newAccount.id,
+  tenant_id: tenant.id,
+  role_id: ownerRoleId,
+});
+
+// 4. Update session's active_accounts
+session.active_accounts.push({
+  account_id: newAccount.id,
+  tenant_id: tenant.id,
+  role_id: ownerRoleId,
+});
+```
+
+### Linking Two Accounts
+
+```typescript
+// 1. Verify both accounts exist and belong to different users
+const account1 = await db.query.account_table.findFirst({ where: eq(account_table.id, account1Id) });
+const account2 = await db.query.account_table.findFirst({ where: eq(account_table.id, account2Id) });
+
+// 2. Choose which User to keep (e.g., older user)
+const keepUserId = account1.user_id;
+const mergeUserId = account2.user_id;
+
+// 3. Update all records from merged user to kept user
+await db.update(account_table)
+  .set({ user_id: keepUserId })
+  .where(eq(account_table.user_id, mergeUserId));
+
+await db.update(account_metadata_table)
+  .set({ user_id: keepUserId })
+  .where(eq(account_metadata_table.user_id, mergeUserId));
+
+// 4. Soft delete merged user
+await db.update(user_table)
+  .set({ deleted_at: new Date() })
+  .where(eq(user_table.id, mergeUserId));
+
+// 5. Update all sessions for merged user
+await updateSessionsUserId(mergeUserId, keepUserId);
+
+// 6. Update current session's active_accounts
+const allMetadata = await db.query.account_metadata_table.findMany({
+  where: eq(account_metadata_table.user_id, keepUserId),
+});
+session.active_accounts = allMetadata.map(m => ({
+  account_id: m.account_id,
+  tenant_id: m.tenant_id,
+  role_id: m.role_id,
+}));
+```
+
+### Switching Tenant
+
+```typescript
+// 1. Verify the account has access to the target tenant
+const targetCombo = session.active_accounts.find(
+  a => a.account_id === session.account_id && a.tenant_id === targetTenantId
+);
+
+if (!targetCombo) {
+  throw new Error("No access to this tenant");
+}
+
+// 2. Update session
+session.tenant_id = targetCombo.tenant_id;
+session.role_id = targetCombo.role_id;
+
+// 3. Save to Redis
+await redis.set(`session:${session.id}`, JSON.stringify(session));
+```
+
+---
+
+## Testing Patterns
+
+### Test Structure
+
+Tests are colocated with routes:
+- `packages/server/src/api-routes-tests/`
+- Mirror the structure of `api-routes/`
+
+### Test Helpers
+
+Located in `packages/server/src/utils/test-helpers/`:
+- `create-test-user.ts` - Creates test users/accounts/tenants
+- `create-test-session.ts` - Creates test sessions
+- `cleanup-test-data.ts` - Cleans up after tests
+
+### Test Pattern
+
+```typescript
+import { describe, test, expect, beforeAll, afterAll } from 'bun:test';
+import { createTestUser } from '../../utils/test-helpers/create-test-user';
+import { cleanupTestData } from '../../utils/test-helpers/cleanup-test-data';
+
+describe('Account API', () => {
+  let testUser: { user: User; account: Account; tenant: Tenant; session: Session };
+
+  beforeAll(async () => {
+    testUser = await createTestUser();
+  });
+
+  afterAll(async () => {
+    await cleanupTestData(testUser.user.id);
+  });
+
+  test('should create account', async () => {
+    const response = await fetch('http://localhost:3000/api/account/create', {
+      method: 'POST',
+      headers: {
+        'Cookie': `pacetrack-session=${testUser.session.token}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ email: 'new@example.com' }),
+    });
+
+    expect(response.status).toBe(200);
+  });
+});
+```
+
+### Running Tests
+
+**Important:** Always run tests after making changes to ensure nothing breaks.
+
+```bash
+# Run all tests
+cd packages/server
+bun test
+
+# Run specific test file
+cd packages/server
+bun test src/api-routes-tests/account/account.create.test.ts
+
+# Run tests in watch mode
+cd packages/server
+bun test --watch
+```
+
+**Test Requirements:**
+- Tests require Docker services to be running (PostgreSQL, Redis, MinIO)
+- Start services with: `docker compose up -d` from project root
+- Tests use isolated database transactions and cleanup helpers
+- All API changes should include corresponding test updates
+
+---
+
+## Important Invariants
+
+### Invariants to Maintain
+
+1. **Every Account must have a Personal Tenant**
+   - Created automatically when Account is created
+   - Personal Tenants cannot be deleted
+
+2. **AccountMetadata is the source of truth**
+   - All access control queries should go through AccountMetadata
+   - Never assume an Account has access without checking AccountMetadata
+
+3. **Sessions must stay synchronized**
+   - When AccountMetadata changes, update all affected sessions
+   - `active_accounts` must match AccountMetadata rows
+
+4. **User is just an identity container**
+   - Never store personal data on User
+   - All user-facing data goes on Account
+
+5. **Soft deletes everywhere**
+   - Never hard delete records
+   - Set `deleted_at` instead
+   - Filter by `deleted_at IS NULL` in queries
+
+6. **Tenant membership requires Role**
+   - Every AccountMetadata row must have a valid role_id
+   - Roles define what the account can do in the tenant
+
+---
+
+## Code Generation
+
+### Route Definitions
+
+After adding/removing route type files:
+
+```bash
+cd packages/schema
+bun run generate-route-definitions
+```
+
+This updates `src/routes-schema/index.ts` with:
+- Imports for all route constants
+- `ROUTE_DEFINITIONS` object for API discovery
+
+### Database Migrations
+
+After changing schema:
+
+```bash
+cd packages/server
+bun run db:generate  # Generate migration
+bun run db:migrate   # Run migration
+```
+
+---
+
+## Common Queries
+
+### Get all tenants for a user
+
+```typescript
+const tenants = await db.query.account_metadata_table.findMany({
+  where: eq(account_metadata_table.user_id, userId),
+  with: {
+    tenant: true,
+    role: true,
+    account: true,
+  },
+});
+```
+
+### Get all accounts for a user
+
+```typescript
+const accounts = await db.query.account_table.findMany({
+  where: and(
+    eq(account_table.user_id, userId),
+    isNull(account_table.deleted_at)
+  ),
+});
+```
+
+### Check if account has access to tenant
+
+```typescript
+const metadata = await db.query.account_metadata_table.findFirst({
+  where: and(
+    eq(account_metadata_table.account_id, accountId),
+    eq(account_metadata_table.tenant_id, tenantId),
+    isNull(account_metadata_table.deleted_at)
+  ),
+});
+
+const hasAccess = metadata !== undefined;
+```
+
+### Get all members of a tenant
+
+```typescript
+const members = await db.query.account_metadata_table.findMany({
+  where: and(
+    eq(account_metadata_table.tenant_id, tenantId),
+    isNull(account_metadata_table.deleted_at)
+  ),
+  with: {
+    account: true,
+    role: true,
+  },
+});
+```
+
+---
+
+## Development Guidelines
+
+### When Adding New Features
+
+1. **Start with schema** - Define DB tables in `packages/schema/src/db-schema/`
+2. **Generate migration** - Run `bun run db:generate` in `packages/server/`
+3. **Add route types** - Create types file in `packages/schema/src/routes-schema/`
+4. **Generate route definitions** - Run `bun run generate-route-definitions` in `packages/schema/`
+5. **Implement route** - Create handler in `packages/server/src/api-routes/`
+6. **Write tests** - Create test file in `packages/server/src/api-routes-tests/`
+7. **Update frontend** - Add server function and UI in `packages/web-app/`
+
+### When Working with Sessions
+
+- Always update `active_accounts` when AccountMetadata changes
+- Consider all active sessions when modifying user/account/tenant relationships
+- Use `session.validateToken()` to verify and refresh sessions
+
+### When Working with Permissions
+
+- Check role's `allowed` array for specific permissions
+- Use role helpers in `packages/schema/src/utils/role-helpers.ts`
+- Never hardcode permission checks outside of helper functions
+
+### When Working with Multi-Tenancy
+
+- Always include `tenant_id` in queries for tenant-scoped resources
+- File uploads go to tenant-specific folders: `tenant-{tenantId}/filename`
+- Rate limiting is per-tenant for authenticated requests
+
+---
+
+## Security Considerations
+
+### Session Security
+
+- Tokens are SHA-256 hashed before storage
+- Sessions are HTTP-only, signed cookies
+- Device fingerprinting for suspicious activity detection
+- IP address tracking for geolocation and abuse prevention
+
+### Access Control
+
+- All API routes (except auth) require valid session
+- Permissions checked via Role's `allowed` array
+- CSRF protection on all state-changing requests
+- Rate limiting prevents abuse
+
+### Data Isolation
+
+- Tenant data is isolated via `tenant_id` filtering
+- File storage uses tenant-specific folders
+- No cross-tenant queries without explicit permission checks
+- Soft deletes prevent accidental data exposure
+
+---
+
+## Redis Keys
+
+### Session Keys
+
+- `session:{sessionId}` - Full session object
+- `session:token:{hashedToken}` - Maps token hash to session ID
+- Sessions expire after 30 days
+
+### Rate Limit Keys
+
+- `ratelimit:auth:{ip}` - Auth routes (5 req / 15 min)
+- `ratelimit:api:{userId}` - API routes (100 req / 15 min)
+- `ratelimit:serve:{ip}` - File serving (500 req / hour)
+
+---
+
+## File Storage
+
+### Path Structure
+
+```
+s3://pacetrack-storage/
+  tenant-{tenantId}/
+    {filename}
+```
+
+### Filename Strategy
+
+- Original filename + nanoid for cache busting
+- Example: `avatar-a1b2c3d4.png`
+- When updating, old file is deleted (best-effort)
+
+### Image Processing
+
+- Avatars are automatically converted to PNG
+- Processed with Sharp library
+- Uploaded as new File object to S3
+
+---
+
+## Summary
+
+This architecture provides:
+
+✅ **Flexible identity** - Users can have multiple emails/logins  
+✅ **Multi-tenancy** - Accounts can belong to multiple organizations  
+✅ **Role-based permissions** - Fine-grained access control per tenant  
+✅ **Seamless switching** - Quick switching between accounts/tenants in a session  
+✅ **Device tracking** - Know where users are logged in  
+✅ **Isolated billing** - Each tenant has its own Stripe subscription  
+✅ **Scalability** - Redis sessions, S3 storage, PostgreSQL data
+
+The key insight is that **AccountMetadata** is the source of truth for all access control. It links User → Account → Tenant → Role, and Sessions cache this information for quick lookups with the ability to switch between different combinations on the fly.
+
+---
+
+## Deletion System (Production-Ready ✅)
+
+### Overview
+Complete deletion system with safety checks, cascade cleanup, Stripe cancellation, and email notifications.
+
+### Deletion Operations
+
+#### 1. Remove Account from Tenant
+**Route**: `POST /api/account/delete { accountId }`
+
+**Soft-Deletes**:
+- `account_metadata` (specific account/tenant link)
+- `account_to_account_group` (for all groups in tenant)
+
+**Safety Checks**:
+- ❌ Cannot remove from personal tenants
+- ❌ Cannot remove last owner of org tenant
+- ❌ Cannot remove yourself if billing owner
+
+**Session Updates**: Removes account/tenant combo from all user sessions
+
+---
+
+#### 2. Delete Account Entirely
+**Route**: `POST /api/account/delete { accountId }` (when removing entirely, not just from tenant)
+
+**Soft-Deletes**:
+- `account_table`
+- `account_metadata` (all tenants)
+- `account_to_account_group` (all groups)
+
+**Safety Checks**:
+- ❌ Cannot delete last account (use user deletion)
+- ❌ Cannot delete if sole owner of org tenant
+- ❌ Cannot delete if billing owner of org tenant
+
+**Session Updates**: Removes all combos with this account_id, switches to another account
+
+---
+
+#### 3. Delete Tenant
+**Route**: `POST /api/tenant/delete { tenantId }`
+
+**Soft-Deletes**:
+- `tenant_table`
+- `account_metadata` (all members)
+- `account_group_table` (all groups)
+- `account_to_account_group_table` (all accounts)
+
+**Safety Checks**:
+- ❌ Cannot delete personal tenants (invariant)
+- ✅ Requires `manage_settings` permission
+
+**Session Updates**: Updates ALL affected users' sessions (not just current user)
+
+**Stripe**: Cancels subscription via `cancelSubscription(membership.subscription_id)`
+
+**Email**: Notifies all members via `notifyTenantMembers()`
+
+---
+
+#### 4. Delete User Entirely (Nuclear)
+**Route**: `POST /api/user/delete { confirmation: "DELETE" }`
+
+**Soft-Deletes**:
+- All personal `tenant_table` records
+- All personal `account_group_table` records
+- All personal `account_to_account_group_table` records
+- All `account_table` records
+- All `account_metadata` records
+- `user_table`
+
+**Safety Checks**:
+- ❌ Cannot delete if sole owner of any org tenant
+- ❌ Cannot delete if billing owner of any org tenant
+- ✅ Requires typing "DELETE" as confirmation
+
+**Session Updates**: Revokes ALL sessions for user
+
+**Stripe**: Cancels all personal tenant subscriptions
+
+**Email**: Confirms deletion to all account email addresses
+
+---
+
+### Helper Functions
+
+**Location**: `packages/server/src/utils/helpers/`
+
+#### Validation
+- `checkAccountDeletionBlockers(accountId)` - Returns blockers for account deletion
+- `canRemoveAccountFromTenant(accountId, tenantId)` - Validates removal
+- `checkUserDeletionBlockers(userId)` - Returns blockers for user deletion
+- `checkTenantDeletionBlockers(tenantId)` - Returns blockers for tenant deletion
+
+#### Execution
+- `removeAccountFromTenant(accountId, tenantId)` - Removes account from tenant
+- `deleteAccountEntirely(accountId, userId)` - Deletes account completely
+- `deleteUserEntirely(userId)` - Nuclear user deletion
+- `deleteTenantEntirely(tenantId, deletedBy)` - Deletes tenant completely
+
+#### Stripe & Email
+- `cancelSubscription(subscriptionId)` - Cancels Stripe subscription (handles mock/no-Stripe)
+- `sendTenantDeletedEmail()` - Notifies member of deleted tenant
+- `sendAccountRemovedEmail()` - Notifies removed account (voluntary vs kicked)
+- `sendUserDeletedEmail()` - Confirms user deletion
+- `notifyTenantMembers()` - Batch notification for tenant deletion
+- `notifyUserDeletion()` - Batch notification for user deletion
+
+---
+
+### Important Deletion Patterns
+
+#### Session Synchronization
+When modifying account/tenant relationships:
+1. Remove invalid combos from `active_accounts` array
+2. Switch to personal tenant if currently on deleted tenant
+3. Switch to another account if currently using deleted account
+4. Revoke session if no valid combos remain
+5. **Update ALL affected users** (not just current user)
+
+#### Cascade Deletions
+All soft-deletes happen in transaction:
+```typescript
+await db.transaction(async (tx) => {
+  // 1. Validate blockers
+  // 2. Cancel Stripe subscription
+  // 3. Soft-delete in correct order
+  // 4. Update sessions
+  // 5. Send emails (fire-and-forget)
+});
+```
+
+#### Error Handling
+- Stripe failures don't block deletion (logged, user loses access)
+- Email failures don't block deletion (logged)
+- Session updates are critical (must succeed)
+
+---
+
+### Deletion Blockers
+
+Before allowing any deletion:
+- **Sole Owner**: Is user the only owner of org tenant?
+- **Last Account**: Is this the user's last remaining account?
+- **Personal Tenant**: Are we trying to delete a personal tenant?
+
+Return clear error messages with specific actions needed.
+

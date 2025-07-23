@@ -1,0 +1,9 @@
+[test]
+preload = ["./src/utils/test-helpers/setup.ts"]
+
+[install]
+# Use exact versions for production
+exact = true
+
+[install.scopes]
+# Configure any scoped packages if needed
