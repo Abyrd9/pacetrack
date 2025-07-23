@@ -1,0 +1,79 @@
+services:
+  postgres:
+    image: postgres:16
+    container_name: pacetrack-postgres
+    restart: always
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      POSTGRES_DB: ${POSTGRES_DB:-pacetrack}
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+
+  minio:
+    image: minio/minio
+    container_name: pacetrack-minio
+    restart: always
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-minioadmin}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-minioadmin}
+    command: server /data --console-address ":9001"
+    volumes:
+      - minio-data:/data
+
+  # One-off init container: makes sure the default bucket exists so that
+  # application code can immediately write objects without hitting
+  # `NoSuchBucket` errors during local development & tests.
+  minio-create-bucket:
+    image: minio/mc
+    depends_on:
+      - minio
+    entrypoint: >
+      /bin/sh -c "\
+        # Wait a moment for MinIO to start accepting connections\n\
+        sleep 5 && \
+        # Configure an alias pointing at the MinIO server\n\
+        mc alias set local http://minio:9000 ${MINIO_ROOT_USER:-minioadmin} ${MINIO_ROOT_PASSWORD:-minioadmin} && \
+        # Create the bucket if it doesn't already exist (ignore-existing)\n\
+        mc mb --ignore-existing local/pacetrack-storage && \
+        echo '✅ Bucket pacetrack-storage ready'"
+    volumes:
+      - minio-data:/data
+    restart: "no"
+
+  stripe-mock:
+    image: stripe/stripe-mock:latest
+    container_name: pacetrack-stripe-mock
+    restart: unless-stopped
+    ports:
+      - "12111:12111" # HTTP
+      - "12112:12112" # HTTPS (self-signed)
+    command: ["-http-port", "12111", "-https-port", "12112"]
+
+  mailpit:
+    image: axllent/mailpit:latest
+    container_name: pacetrack-mailpit
+    restart: unless-stopped
+    ports:
+      - "1025:1025"   # SMTP
+      - "8025:8025"   # Web UI
+
+  redis:
+    image: redis:7-alpine
+    container_name: pacetrack-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    command: redis-server --appendonly yes
+
+volumes:
+  postgres-data:
+  minio-data:
+  redis-data: 

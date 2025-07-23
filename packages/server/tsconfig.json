@@ -1,0 +1,13 @@
+{
+	"compilerOptions": {
+		"baseUrl": ".",
+		"skipLibCheck": true,
+		"strict": true,
+		"jsx": "react-jsx",
+		"jsxImportSource": "hono/jsx",
+		"module": "ESNext",
+		"moduleResolution": "bundler"
+	},
+	"include": ["src/**/*.ts", "client/**/*.ts"],
+	"exclude": ["node_modules/**/@abyrd9/zod-form-data/**"]
+}

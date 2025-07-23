@@ -1,0 +1,43 @@
+{
+  "name": "@pacetrack/server",
+  "module": "index.ts",
+  "type": "module",
+  "scripts": {
+    "dev": "PORT=4000 bun run --hot src/index.ts",
+    "db:generate": "bunx --bun drizzle-kit generate",
+    "db:migrate": "bunx --bun drizzle-kit migrate",
+    "db:push": "bunx --bun drizzle-kit push",
+    "db:drop": "bunx --bun drizzle-kit drop",
+    "db:studio": "npx drizzle-kit studio"
+  },
+  "dependencies": {
+    "@abyrd9/zod-form-data": "^1.0.1",
+    "@hono/swagger-ui": "^0.5.2",
+    "@libsql/client": "^0.15.10",
+    "@mjackson/file-storage": "^0.7.0",
+    "@mjackson/form-data-parser": "^0.9.1",
+    "@mjackson/lazy-file": "^3.4.0",
+    "@oslojs/crypto": "^1.0.1",
+    "@oslojs/encoding": "^1.1.0",
+    "@pacetrack/schema": "workspace:*",
+    "@paralleldrive/cuid2": "^2.2.2",
+    "dotenv": "^17.2.0",
+    "drizzle-orm": "^0.44.3",
+    "drizzle-zod": "^0.8.2",
+    "hono": "^4.8.5",
+    "nanoid": "^5.1.5",
+    "nodemailer": "^7.0.5",
+    "pg": "^8.16.3",
+    "resend": "^4.7.0",
+    "sharp": "^0.34.3",
+    "stripe": "^18.3.0",
+    "zod": "^4.0.5"
+  },
+  "devDependencies": {
+    "@types/bun": "^1.2.19",
+    "@types/nodemailer": "^6.4.17",
+    "@types/pg": "^8.15.4",
+    "drizzle-kit": "^0.31.4",
+    "@types/uuid": "^10.0.0"
+  }
+}
