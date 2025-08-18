@@ -1,24 +1,37 @@
 import {
-	USER_GET_BY_ID_ROUTE_PATH,
-	UserGetByIdRequestSchema,
 	makeUserGetByIdRouteResponse,
-	user_table,
-	users_to_tenants_table,
+	USER_GET_BY_ID_ROUTE_PATH,
 	type User,
+	UserGetByIdRequestSchema,
+	user_table,
 } from "@pacetrack/schema";
-import { and, eq } from "drizzle-orm";
+import { and, eq, isNull } from "drizzle-orm";
 import type { App } from "src";
 import { db } from "src/db";
 import { getParsedBody } from "src/utils/helpers/get-parsed-body";
+import { logger } from "src/utils/helpers/logger";
 
 export function userGetByIdRoute(app: App) {
 	app.post(USER_GET_BY_ID_ROUTE_PATH, async (c) => {
+		const requestId = Math.random().toString(36).substring(7);
+
+		logger.middleware(
+			"USER_GET_BY_ID",
+			"Starting user get by ID request",
+			requestId,
+		);
+
 		try {
-			const userId = c.get("user_id");
-			const tenantId = c.get("tenant_id");
+			logger.middleware("USER_GET_BY_ID", "Parsing request body", requestId);
 
 			const parsed = await getParsedBody(c.req, UserGetByIdRequestSchema);
 			if (!parsed.success) {
+				logger.middleware(
+					"USER_GET_BY_ID",
+					"Request body parsing failed",
+					requestId,
+					parsed.errors,
+				);
 				return c.json(
 					makeUserGetByIdRouteResponse({
 						key: USER_GET_BY_ID_ROUTE_PATH,
@@ -29,45 +42,67 @@ export function userGetByIdRoute(app: App) {
 				);
 			}
 
-			// Ensure requested user belongs to tenant
+			logger.middleware(
+				"USER_GET_BY_ID",
+				`Request body parsed successfully - Target User ID: ${parsed.data.userId}`,
+				requestId,
+			);
+
+			logger.middleware(
+				"USER_GET_BY_ID",
+				"Querying database for user",
+				requestId,
+			);
+
 			const userRow = await db
-				.select({ user: user_table })
+				.select()
 				.from(user_table)
-				.innerJoin(
-					users_to_tenants_table,
-					eq(users_to_tenants_table.user_id, user_table.id),
-				)
 				.where(
 					and(
 						eq(user_table.id, parsed.data.userId),
-						eq(users_to_tenants_table.tenant_id, tenantId),
+						isNull(user_table.deleted_at),
 					),
 				)
 				.limit(1);
 
+			logger.middleware(
+				"USER_GET_BY_ID",
+				`Database query completed - Found ${userRow.length} user(s)`,
+				requestId,
+			);
+
 			if (userRow.length === 0) {
+				logger.middleware(
+					"USER_GET_BY_ID",
+					"User not found in database - returning 404",
+					requestId,
+				);
 				return c.json(
 					makeUserGetByIdRouteResponse({
 						key: USER_GET_BY_ID_ROUTE_PATH,
 						status: "error",
 						errors: { global: "User not found" },
 					}),
-					400,
+					404,
 				);
 			}
 
-			const targetUser: User = userRow[0].user;
+			const targetUser: User = userRow[0];
 
-			if (targetUser.deleted_at) {
-				return c.json(
-					makeUserGetByIdRouteResponse({
-						key: USER_GET_BY_ID_ROUTE_PATH,
-						status: "error",
-						errors: { global: "User not found" },
-					}),
-					400,
-				);
-			}
+			logger.middleware(
+				"USER_GET_BY_ID",
+				`User found - ID: ${targetUser.id}, Deleted: ${targetUser.deleted_at ? "yes" : "no"}`,
+				requestId,
+			);
+
+			logger.middleware(
+				"USER_GET_BY_ID",
+				"User get by ID completed successfully",
+				requestId,
+				{
+					userId: targetUser.id,
+				},
+			);
 
 			return c.json(
 				makeUserGetByIdRouteResponse({
@@ -78,7 +113,12 @@ export function userGetByIdRoute(app: App) {
 				200,
 			);
 		} catch (error) {
-			console.error(error);
+			logger.middlewareError(
+				"USER_GET_BY_ID",
+				"Error during user get by ID",
+				requestId,
+				error,
+			);
 			return c.json(
 				makeUserGetByIdRouteResponse({
 					key: USER_GET_BY_ID_ROUTE_PATH,

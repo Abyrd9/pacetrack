@@ -1,5 +1,5 @@
-import { SIGN_OUT_ROUTE_PATH } from "@pacetrack/schema";
 import { beforeAll, describe, expect, test } from "bun:test";
+import { SIGN_OUT_ROUTE_PATH } from "@pacetrack/schema";
 import { resetDb } from "src/utils/test-helpers/reset-db";
 import {
 	makeAuthenticatedRequest,

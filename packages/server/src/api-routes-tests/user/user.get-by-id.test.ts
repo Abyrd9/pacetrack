@@ -1,11 +1,10 @@
+import { beforeAll, describe, expect, test } from "bun:test";
 import {
 	USER_GET_BY_ID_ROUTE_PATH,
-	user_table,
 	type UserGetByIdRouteResponse,
+	user_table,
 } from "@pacetrack/schema";
-import { beforeAll, describe, expect, test } from "bun:test";
 import { eq, sql } from "drizzle-orm";
-import { createTestUser } from "src/utils/test-helpers/create-test-user";
 import { resetDb } from "src/utils/test-helpers/reset-db";
 import {
 	makeAuthenticatedRequest,
@@ -19,10 +18,12 @@ beforeAll(async () => {
 });
 
 describe("User Get By ID Route", () => {
-	test("returns user when user exists in tenant", async () => {
+	test("returns user when user exists", async () => {
 		await resetDb();
-		const { cookie, csrfToken, tenant } = await setTestSession();
-		const targetUser = await createTestUser(tenant.id);
+		const { cookie, csrfToken } = await setTestSession();
+
+		// Create a test user
+		const [testUser] = await db.insert(user_table).values({}).returning();
 
 		const response = await app.request(USER_GET_BY_ID_ROUTE_PATH, {
 			method: "POST",
@@ -30,7 +31,7 @@ describe("User Get By ID Route", () => {
 				"Content-Type": "application/json",
 			}),
 			body: JSON.stringify({
-				userId: targetUser.id,
+				userId: testUser.id,
 			}),
 		});
 
@@ -39,11 +40,12 @@ describe("User Get By ID Route", () => {
 		expect(body.status).toBe("ok");
 		if (body.status !== "ok") throw new Error("unexpected");
 
-		expect(body.payload.id).toBe(targetUser.id);
-		expect(body.payload.email).toBe(targetUser.email);
+		expect(body.payload.id).toBe(testUser.id);
+		expect(body.payload.created_at).toBeDefined();
+		expect(body.payload.deleted_at).toBeNull();
 	});
 
-	test("returns 400 when user does not exist", async () => {
+	test("returns 404 when user does not exist", async () => {
 		await resetDb();
 		const { cookie, csrfToken } = await setTestSession();
 
@@ -57,22 +59,24 @@ describe("User Get By ID Route", () => {
 			}),
 		});
 
-		expect(response.status).toBe(400);
+		expect(response.status).toBe(404);
 		const body = (await response.json()) as UserGetByIdRouteResponse;
 		expect(body.status).toBe("error");
 		expect(body.errors?.global).toBe("User not found");
 	});
 
-	test("returns 400 when user is soft deleted", async () => {
+	test("returns 404 when user is soft deleted", async () => {
 		await resetDb();
-		const { cookie, csrfToken, tenant } = await setTestSession();
-		const targetUser = await createTestUser(tenant.id);
+		const { cookie, csrfToken } = await setTestSession();
+
+		// Create a test user
+		const [testUser] = await db.insert(user_table).values({}).returning();
 
 		// Soft delete the user
 		await db
 			.update(user_table)
 			.set({ deleted_at: sql`now()` })
-			.where(eq(user_table.id, targetUser.id));
+			.where(eq(user_table.id, testUser.id));
 
 		const response = await app.request(USER_GET_BY_ID_ROUTE_PATH, {
 			method: "POST",
@@ -80,13 +84,67 @@ describe("User Get By ID Route", () => {
 				"Content-Type": "application/json",
 			}),
 			body: JSON.stringify({
-				userId: targetUser.id,
+				userId: testUser.id,
+			}),
+		});
+
+		expect(response.status).toBe(404);
+		const body = (await response.json()) as UserGetByIdRouteResponse;
+		expect(body.status).toBe("error");
+		expect(body.errors?.global).toBe("User not found");
+	});
+
+	test("returns 400 for invalid request body", async () => {
+		await resetDb();
+		const { cookie, csrfToken } = await setTestSession();
+
+		const response = await app.request(USER_GET_BY_ID_ROUTE_PATH, {
+			method: "POST",
+			headers: makeAuthenticatedRequest(cookie, csrfToken, "POST", {
+				"Content-Type": "application/json",
+			}),
+			body: JSON.stringify({
+				userId: 123, // Invalid type
 			}),
 		});
 
 		expect(response.status).toBe(400);
 		const body = (await response.json()) as UserGetByIdRouteResponse;
 		expect(body.status).toBe("error");
-		expect(body.errors?.global).toBe("User not found");
+		expect(body.errors).toBeDefined();
+	});
+
+	test("returns 400 for missing userId", async () => {
+		await resetDb();
+		const { cookie, csrfToken } = await setTestSession();
+
+		const response = await app.request(USER_GET_BY_ID_ROUTE_PATH, {
+			method: "POST",
+			headers: makeAuthenticatedRequest(cookie, csrfToken, "POST", {
+				"Content-Type": "application/json",
+			}),
+			body: JSON.stringify({}),
+		});
+
+		expect(response.status).toBe(400);
+		const body = (await response.json()) as UserGetByIdRouteResponse;
+		expect(body.status).toBe("error");
+		expect(body.errors).toBeDefined();
+	});
+
+	test("returns 401 when not authenticated", async () => {
+		await resetDb();
+
+		const response = await app.request(USER_GET_BY_ID_ROUTE_PATH, {
+			method: "POST",
+			headers: {
+				"Content-Type": "application/json",
+			},
+			body: JSON.stringify({
+				userId: "some-user-id",
+			}),
+		});
+
+		expect(response.status).toBe(401);
 	});
 });

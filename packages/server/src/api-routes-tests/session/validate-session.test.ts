@@ -1,6 +1,6 @@
+import { beforeAll, describe, expect, test } from "bun:test";
 import type { ValidateSessionRouteResponse } from "@pacetrack/schema";
 import { VALIDATE_SESSION_ROUTE_PATH } from "@pacetrack/schema";
-import { beforeAll, describe, expect, test } from "bun:test";
 import { resetDb } from "src/utils/test-helpers/reset-db";
 import {
 	makeAuthenticatedRequest,
@@ -14,10 +14,7 @@ let tenantId: string | undefined;
 
 beforeAll(async () => {
 	await resetDb();
-	const session = await setTestSession({
-		email: "test@test+session+test.com",
-		password: "password123",
-	});
+	const session = await setTestSession();
 
 	cookie = session.cookie;
 	csrfToken = session.csrfToken;

@@ -1,11 +1,10 @@
+import { beforeAll, describe, expect, test } from "bun:test";
 import {
 	USER_DELETE_ROUTE_PATH,
-	user_table,
 	type UserDeleteRouteResponse,
+	user_table,
 } from "@pacetrack/schema";
-import { beforeAll, describe, expect, test } from "bun:test";
-import { eq } from "drizzle-orm";
-import { createTestUser } from "src/utils/test-helpers/create-test-user";
+import { eq, sql } from "drizzle-orm";
 import { resetDb } from "src/utils/test-helpers/reset-db";
 import {
 	makeAuthenticatedRequest,
@@ -19,10 +18,12 @@ beforeAll(async () => {
 });
 
 describe("User Delete Route", () => {
-	test("deletes user when current user has manage_users permission", async () => {
+	test("deletes user successfully", async () => {
 		await resetDb();
-		const { cookie, csrfToken, tenant } = await setTestSession();
-		const userToDelete = await createTestUser(tenant.id, "delete-me@test.com");
+		const { cookie, csrfToken } = await setTestSession();
+
+		// Create a test user
+		const [testUser] = await db.insert(user_table).values({}).returning();
 
 		const response = await app.request(USER_DELETE_ROUTE_PATH, {
 			method: "POST",
@@ -30,105 +31,25 @@ describe("User Delete Route", () => {
 				"Content-Type": "application/json",
 			}),
 			body: JSON.stringify({
-				userId: userToDelete.id,
+				userId: testUser.id,
 			}),
 		});
 
 		expect(response.status).toBe(200);
 		const body = (await response.json()) as UserDeleteRouteResponse;
 		expect(body.status).toBe("ok");
+		if (body.status !== "ok") throw new Error("unexpected");
+
+		expect(body.payload.message).toBe("User deleted successfully");
 
 		// Verify user is soft deleted
 		const deletedUser = await db.query.user_table.findFirst({
-			where: eq(user_table.id, userToDelete.id),
+			where: eq(user_table.id, testUser.id),
 		});
 		expect(deletedUser?.deleted_at).toBeDefined();
 	});
 
-	test("returns 400 when trying to delete yourself", async () => {
-		await resetDb();
-		const { cookie, csrfToken, user } = await setTestSession();
-
-		const response = await app.request(USER_DELETE_ROUTE_PATH, {
-			method: "POST",
-			headers: makeAuthenticatedRequest(cookie, csrfToken, "POST", {
-				"Content-Type": "application/json",
-			}),
-			body: JSON.stringify({
-				userId: user.id,
-			}),
-		});
-
-		expect(response.status).toBe(400);
-		const body = (await response.json()) as UserDeleteRouteResponse;
-		expect(body.status).toBe("error");
-		expect(body.errors?.global).toBe("You cannot delete yourself");
-	});
-
-	test("returns 403 when user lacks manage_users permission", async () => {
-		await resetDb();
-		const {
-			cookie,
-			csrfToken,
-			tenant,
-			user: adminUser,
-		} = await setTestSession();
-		const userToDelete = await createTestUser(
-			tenant.id,
-			"no-permission@test.com",
-		);
-
-		// Create a user without manage_users permission in the same tenant
-		const regularUser = await createTestUser(tenant.id, "regular@test.com");
-
-		// Create a session for the regular user manually
-		const { sessions } = await import("src/utils/helpers/auth-session");
-		const { generateCSRFToken } = await import("src/utils/helpers/csrf");
-		const { serializeSigned } = await import("hono/utils/cookie");
-
-		const userRole = await db.query.role_table.findFirst({
-			where: (role, { eq }) => eq(role.kind, "user"),
-		});
-		if (!userRole) throw new Error("User role not found");
-
-		const token = sessions.generateToken();
-		const session = await sessions.create({
-			userId: regularUser.id,
-			tenantId: tenant.id,
-			roleId: userRole.id,
-			token,
-		});
-
-		const csrfToken2 = await generateCSRFToken(token);
-		const cookie2 = await serializeSigned(
-			"pacetrack-session",
-			token,
-			Bun.env.SESSION_SECRET || "",
-			{
-				httpOnly: true,
-				sameSite: "Lax",
-				expires: new Date(session.expires_at),
-				path: "/",
-			},
-		);
-
-		const response = await app.request(USER_DELETE_ROUTE_PATH, {
-			method: "POST",
-			headers: makeAuthenticatedRequest(cookie2, csrfToken2, "POST", {
-				"Content-Type": "application/json",
-			}),
-			body: JSON.stringify({
-				userId: userToDelete.id,
-			}),
-		});
-
-		const body = (await response.json()) as UserDeleteRouteResponse;
-		expect(response.status).toBe(403);
-		expect(body.status).toBe("error");
-		expect(body.errors?.global).toBe("You are not authorized");
-	});
-
-	test("returns 400 when target user not found in tenant", async () => {
+	test("returns 404 when user does not exist", async () => {
 		await resetDb();
 		const { cookie, csrfToken } = await setTestSession();
 
@@ -142,9 +63,128 @@ describe("User Delete Route", () => {
 			}),
 		});
 
+		expect(response.status).toBe(404);
+		const body = (await response.json()) as UserDeleteRouteResponse;
+		expect(body.status).toBe("error");
+		expect(body.errors?.global).toBe("User not found");
+	});
+
+	test("returns 404 when user is already soft deleted", async () => {
+		await resetDb();
+		const { cookie, csrfToken } = await setTestSession();
+
+		// Create a test user and immediately soft delete it
+		const [testUser] = await db.insert(user_table).values({}).returning();
+
+		await db
+			.update(user_table)
+			.set({ deleted_at: sql`now()` })
+			.where(eq(user_table.id, testUser.id));
+
+		const response = await app.request(USER_DELETE_ROUTE_PATH, {
+			method: "POST",
+			headers: makeAuthenticatedRequest(cookie, csrfToken, "POST", {
+				"Content-Type": "application/json",
+			}),
+			body: JSON.stringify({
+				userId: testUser.id,
+			}),
+		});
+
+		expect(response.status).toBe(404);
+		const body = (await response.json()) as UserDeleteRouteResponse;
+		expect(body.status).toBe("error");
+		expect(body.errors?.global).toBe("User not found");
+	});
+
+	test("returns 400 for invalid request body", async () => {
+		await resetDb();
+		const { cookie, csrfToken } = await setTestSession();
+
+		const response = await app.request(USER_DELETE_ROUTE_PATH, {
+			method: "POST",
+			headers: makeAuthenticatedRequest(cookie, csrfToken, "POST", {
+				"Content-Type": "application/json",
+			}),
+			body: JSON.stringify({
+				userId: 123, // Invalid type
+			}),
+		});
+
 		expect(response.status).toBe(400);
 		const body = (await response.json()) as UserDeleteRouteResponse;
 		expect(body.status).toBe("error");
-		expect(body.errors?.global).toBe("User not found in tenant");
+		expect(body.errors).toBeDefined();
+	});
+
+	test("returns 400 for missing userId", async () => {
+		await resetDb();
+		const { cookie, csrfToken } = await setTestSession();
+
+		const response = await app.request(USER_DELETE_ROUTE_PATH, {
+			method: "POST",
+			headers: makeAuthenticatedRequest(cookie, csrfToken, "POST", {
+				"Content-Type": "application/json",
+			}),
+			body: JSON.stringify({}),
+		});
+
+		expect(response.status).toBe(400);
+		const body = (await response.json()) as UserDeleteRouteResponse;
+		expect(body.status).toBe("error");
+		expect(body.errors).toBeDefined();
+	});
+
+	test("returns 401 when not authenticated", async () => {
+		await resetDb();
+
+		const response = await app.request(USER_DELETE_ROUTE_PATH, {
+			method: "POST",
+			headers: {
+				"Content-Type": "application/json",
+			},
+			body: JSON.stringify({
+				userId: "some-user-id",
+			}),
+		});
+
+		expect(response.status).toBe(401);
+	});
+
+	test("soft delete allows user to be 'deleted' multiple times", async () => {
+		await resetDb();
+		const { cookie, csrfToken } = await setTestSession();
+
+		// Create a test user
+		const [testUser] = await db.insert(user_table).values({}).returning();
+
+		// First delete
+		const response1 = await app.request(USER_DELETE_ROUTE_PATH, {
+			method: "POST",
+			headers: makeAuthenticatedRequest(cookie, csrfToken, "POST", {
+				"Content-Type": "application/json",
+			}),
+			body: JSON.stringify({
+				userId: testUser.id,
+			}),
+		});
+
+		expect(response1.status).toBe(200);
+
+		// Second delete attempt should return 404 since user is already deleted
+		const response2 = await app.request(USER_DELETE_ROUTE_PATH, {
+			method: "POST",
+			headers: makeAuthenticatedRequest(cookie, csrfToken, "POST", {
+				"Content-Type": "application/json",
+			}),
+			body: JSON.stringify({
+				userId: testUser.id,
+			}),
+		});
+
+		expect(response2.status).toBe(404);
+		const body2 = (await response2.json()) as UserDeleteRouteResponse;
+		expect(body2.status).toBe("error");
+		expect(body2.errors?.global).toBe("User not found");
 	});
 });

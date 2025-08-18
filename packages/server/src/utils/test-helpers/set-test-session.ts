@@ -1,13 +1,14 @@
 import {
-	DEFAULT_ROLES,
 	account_table,
+	account_to_tenant_table,
+	DEFAULT_ROLES,
+	membership_table,
 	role_table,
 	tenant_table,
-	user_table,
-	users_to_tenants_table,
 	type User,
+	user_table,
 } from "@pacetrack/schema";
-import { sql } from "drizzle-orm";
+import { eq } from "drizzle-orm";
 import { serializeSigned } from "hono/utils/cookie";
 import { db } from "src/db";
 import { sessions } from "../helpers/auth-session";
@@ -16,62 +17,61 @@ import { generateCSRFToken } from "../helpers/csrf";
 let testUserCounter = 0;
 
 export async function setTestSession(
-	passedInUser?: Partial<Pick<User, "id" | "email" | "password">>,
+	passedInUser?: Partial<Pick<User, "id">>,
+	passedInEmail?: string,
+	passedInPassword?: string,
 ) {
 	return await db.transaction(async (tx) => {
 		if (!Bun.env.SESSION_SECRET) throw new Error("SESSION_SECRET is not set");
 
-		const hashed = await Bun.password.hash(
-			passedInUser?.password ?? "password123",
-		);
+		const email = passedInEmail ?? `test${testUserCounter++}@test.com`;
+		const password = passedInPassword ?? "password123";
+		const hashed = await Bun.password.hash(password);
 
 		let user: User | undefined;
-		if (passedInUser) {
-			// Check for existing user
-			const existingUser = await tx.query.user_table.findFirst({
-				where: (user, { eq }) =>
-					eq(
-						user.email,
-						passedInUser?.email ?? `test${testUserCounter++}@test.com`,
-					),
-			});
 
-			if (existingUser) user = existingUser;
+		if (passedInUser?.id) {
+			// Check for existing user
+			user = await tx.query.user_table.findFirst({
+				where: eq(user_table.id, passedInUser.id),
+			});
 		}
 
 		if (!user) {
-			const resp = await tx
-				.insert(user_table)
-				.values({
-					email: passedInUser?.email ?? `test${testUserCounter++}@test.com`,
-					password: passedInUser?.password ?? hashed,
-				})
-				.returning();
+			// Create User (top-level identity)
+			const resp = await tx.insert(user_table).values({}).returning();
 
 			user = resp[0];
 		}
 
+		// Create Account (email/credentials) linked to User
 		const [account] = await tx
 			.insert(account_table)
 			.values({
-				created_by: user.id,
-				customer_id: "cus_123",
-				subscription_id: "sub_123",
-				created_at: sql`now()`,
-				updated_at: sql`now()`,
+				user_id: user.id,
+				email,
+				password: hashed,
 			})
 			.returning();
 
-		// Now with this account we need to make a personal tenant and add the user to it
+		// Create Membership (billing)
+		const [membership] = await tx
+			.insert(membership_table)
+			.values({
+				created_by: user.id,
+				customer_id: "cus_test",
+				subscription_id: "sub_test",
+			})
+			.returning();
+
+		// Now create a personal tenant
 		const [tenant] = await tx
 			.insert(tenant_table)
 			.values({
 				name: "Personal",
-				account_id: account.id,
+				membership_id: membership.id,
 				created_by: user.id,
 				kind: "personal",
-				created_at: sql`now()`,
-				updated_at: sql`now()`,
 			})
 			.returning();
 
@@ -82,25 +82,22 @@ export async function setTestSession(
 				name: DEFAULT_ROLES.OWNER.name,
 				kind: DEFAULT_ROLES.OWNER.kind,
 				allowed: DEFAULT_ROLES.OWNER.allowed,
-				created_at: sql`now()`,
-				updated_at: sql`now()`,
 			})
 			.returning();
 
-		// Add the user to the tenant with the Owner role
-		await tx.insert(users_to_tenants_table).values({
-			user_id: user.id,
+		// Add the account to the tenant with the Owner role
+		await tx.insert(account_to_tenant_table).values({
+			account_id: account.id,
 			tenant_id: tenant.id,
 			role_id: role.id,
-			is_primary_contact: true,
-			is_billing_contact: true,
-			created_at: sql`now()`,
-			updated_at: sql`now()`,
 		});
+
+		// Note: tenant-membership relationship is now handled via tenant.membership_id
 
 		const token = sessions.generateToken();
 		const session = await sessions.create({
 			userId: user.id,
+			accountId: account.id,
 			tenantId: tenant.id,
 			roleId: role.id,
 			token,
@@ -124,6 +121,7 @@ export async function setTestSession(
 		return {
 			user,
 			account,
+			membership,
 			tenant,
 			role,
 			cookie,

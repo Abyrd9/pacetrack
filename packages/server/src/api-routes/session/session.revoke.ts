@@ -1,7 +1,7 @@
 import {
+	makeSessionRevokeRouteResponse,
 	SESSION_REVOKE_ROUTE_PATH,
 	SessionRevokeRequestSchema,
-	makeSessionRevokeRouteResponse,
 } from "@pacetrack/schema";
 import type { App } from "src";
 import { sessions } from "src/utils/helpers/auth-session";

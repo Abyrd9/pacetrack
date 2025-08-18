@@ -18,7 +18,7 @@ export interface TwoSessions {
  * list, revoke, and revoke-all.
  */
 export async function createTwoSessions(): Promise<TwoSessions> {
-	const { user, cookie, csrfToken } = await setTestSession();
+	const { user, account, cookie, csrfToken } = await setTestSession();
 
 	// First (current) session
 	const userSessions = await sessions.listUserSessions(user.id);
@@ -27,11 +27,16 @@ export async function createTwoSessions(): Promise<TwoSessions> {
 	)[0];
 	const currentSessionId = firstSession.id;
 
-	// Second session for the same user
-	await setTestSession({
-		id: user.id,
-		email: user.email,
-		password: user.password,
+	// Second session for the same user - create session without new account
+	const token2 = sessions.generateToken();
+	await sessions.create({
+		token: token2,
+		userId: user.id,
+		accountId: account.id,
+		tenantId: userSessions[0].tenant_id,
+		roleId: userSessions[0].role_id,
+		ipAddress: "127.0.0.1",
+		userAgent: "test-agent",
 	});
 
 	const updatedUserSessions = await sessions.listUserSessions(user.id);

@@ -4,27 +4,27 @@ import { ActionDataSchema, type RouteResponse } from "../../types/generics";
 export const USER_DELETE_ROUTE_PATH = "/api/user/delete";
 
 export const UserDeleteRequestSchema = z.object({
-  userId: z.string(),
+	userId: z.string(),
 });
 
 export const UserDeleteActionDataErrorSchema = ActionDataSchema(
-  UserDeleteRequestSchema,
-  "error",
-  USER_DELETE_ROUTE_PATH
+	UserDeleteRequestSchema,
+	"error",
+	USER_DELETE_ROUTE_PATH,
 );
 
 export const UserDeleteActionDataSuccessSchema = ActionDataSchema(
-  z.object({
-    message: z.string(),
-  }),
-  "ok",
-  USER_DELETE_ROUTE_PATH
+	z.object({
+		message: z.string(),
+	}),
+	"ok",
+	USER_DELETE_ROUTE_PATH,
 );
 
 export type UserDeleteRouteResponse = RouteResponse<
-  typeof UserDeleteActionDataSuccessSchema,
-  typeof UserDeleteActionDataErrorSchema
+	typeof UserDeleteActionDataSuccessSchema,
+	typeof UserDeleteActionDataErrorSchema
 >;
 
 export const makeUserDeleteRouteResponse = (args: UserDeleteRouteResponse) =>
-  args;
+	args;

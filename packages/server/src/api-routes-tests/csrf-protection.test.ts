@@ -1,5 +1,5 @@
-import { TENANT_CREATE_ROUTE_PATH } from "@pacetrack/schema";
 import { beforeAll, describe, expect, test } from "bun:test";
+import { TENANT_CREATE_ROUTE_PATH } from "@pacetrack/schema";
 import { resetDb } from "src/utils/test-helpers/reset-db";
 import {
 	makeAuthenticatedRequest,
@@ -30,7 +30,7 @@ describe("CSRF Protection", () => {
 
 		expect(response.status).toBe(403);
 		const body = await response.json();
-		expect(body.error).toBe("CSRF token required");
+		expect(body.errors?.global).toBe("CSRF token required");
 	});
 
 	test("should require CSRF token for PUT requests", async () => {
@@ -48,7 +48,7 @@ describe("CSRF Protection", () => {
 
 		expect(response.status).toBe(403);
 		const body = await response.json();
-		expect(body.error).toBe("CSRF token required");
+		expect(body.errors?.global).toBe("CSRF token required");
 	});
 
 	test("should require CSRF token for DELETE requests", async () => {
@@ -64,7 +64,7 @@ describe("CSRF Protection", () => {
 
 		expect(response.status).toBe(403);
 		const body = await response.json();
-		expect(body.error).toBe("CSRF token required");
+		expect(body.errors?.global).toBe("CSRF token required");
 	});
 
 	test("should reject invalid CSRF tokens", async () => {
@@ -85,7 +85,7 @@ describe("CSRF Protection", () => {
 
 		expect(response.status).toBe(403);
 		const body = await response.json();
-		expect(body.error).toBe("Invalid CSRF token");
+		expect(body.errors?.global).toBe("Invalid CSRF token");
 	});
 
 	test("should accept valid CSRF tokens", async () => {

@@ -1,0 +1,330 @@
+@import "tailwindcss";
+@custom-variant dark (&:is(.dark *));
+
+/* Force font to load immediately and prevent flashing */
+@font-face {
+	font-family: "Inter Variable";
+	font-style: normal;
+	font-display: block; /* Use block instead of swap to prevent flashing */
+	font-weight: 100 900;
+	src: url("https://cdn.jsdelivr.net/fontsource/fonts/inter:vf@latest/latin-wght-normal.woff2")
+		format("woff2-variations");
+	unicode-range:
+		U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+@theme {
+	--font-sans:
+		"Inter Variable", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+		"Helvetica Neue", Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji",
+		"Segoe UI Symbol", "Noto Color Emoji";
+
+	--color-background-100: rgb(var(--background-100));
+	--color-background-200: rgb(var(--background-200));
+	--color-background-300: rgb(var(--background-300));
+	--color-background-400: rgb(var(--background-400));
+	--color-background-500: rgb(var(--background-500));
+	--color-background: rgb(var(--background-50));
+	--color-background-offset: rgb(var(--background-75));
+
+	--color-foreground-100: rgb(var(--foreground-100));
+	--color-foreground-200: rgb(var(--foreground-200));
+	--color-foreground-300: rgb(var(--foreground-300));
+	--color-foreground-400: rgb(var(--foreground-400));
+	--color-foreground-500: rgb(var(--foreground-500));
+	--color-foreground: rgb(var(--foreground-50));
+
+	--color-muted-300: rgb(var(--muted-300));
+	--color-muted-400: rgb(var(--muted-400));
+	--color-muted-500: rgb(var(--muted-500));
+	--color-muted: rgb(var(--muted-400));
+
+	--color-muted-foreground-400: rgb(var(--muted-foreground-400));
+	--color-muted-foreground-500: rgb(var(--muted-foreground-500));
+	--color-muted-foreground: rgb(var(--muted-foreground-400));
+
+	--shadow-modal:
+		1px 0px 3px -1px rgb(0 0 0 / 0.05),
+		-1px 0px 3px -1px rgb(0 0 0 / 0.05),
+		0px 1px 0px -1px rgb(0 0 0 / 0.05),
+		0px 1px 1px -1px rgb(0 0 0 / 0.05),
+		0px 1px 2px -1px rgb(0 0 0 / 0.05),
+		0px 2px 2px -2px rgb(0 0 0 / 0.05),
+		0px 3px 6px -2px rgb(0 0 0 / 0.05),
+		0px 4px 8px -2px rgb(0 0 0 / 0.05);
+	--shadow-button:
+		0px 1px 0px -1px rgb(0 0 0 / 0.05),
+		0px 1px 1px -1px rgb(0 0 0 / 0.05),
+		0px 1px 2px -1px rgb(0 0 0 / 0.05),
+		0px 2px 4px -2px rgb(0 0 0 / 0.05),
+		0px 3px 6px -3px rgb(0 0 0 / 0.05);
+	--shadow-input:
+		0px 1px 0px -1px rgb(0 0 0 / 0.05),
+		0px 1px 1px -1px rgb(0 0 0 / 0.05),
+		0px 1px 2px -1px rgb(0 0 0 / 0.05),
+		0px 2px 3px -2px rgb(0 0 0 / 0.05);
+	--shadow-card:
+		0px 1px 0px -1px rgb(0 0 0 / 0.05),
+		0px 1px 1px -1px rgb(0 0 0 / 0.05),
+		0px 1px 2px -1px rgb(0 0 0 / 0.05);
+	--shadow-highlight:
+		inset 0px 0px 0px 1px rgb(250 250 250 / 0.03), inset 0px 1px 0px
+		rgb(250 250 250 / 0.03);
+
+	--animate-fade-up: fade-up 0.2s ease-out;
+	--animate-fade-down: fade-down 0.2s ease-out;
+	--animate-accordion-down: accordion-down 0.2s ease-out;
+	--animate-accordion-up: accordion-up 0.2s ease-out;
+	--animate-collapsible-down: collapsible-down 0.2s ease-out;
+	--animate-collapsible-up: collapsible-up 0.2s ease-out;
+
+	--animate-overlay-in: opacity-in 150ms cubic-bezier(0.33, 1, 0.68, 1);
+	--animate-overlay-out: opacity-out 150ms cubic-bezier(0.33, 1, 0.68, 1);
+
+	--animate-dialog-in: dialog-in 150ms cubic-bezier(0.33, 1, 0.68, 1);
+	--animate-dialog-out: dialog-out 150ms cubic-bezier(0.33, 1, 0.68, 1);
+
+	@keyframes opacity-in {
+		from {
+			opacity: 0;
+		}
+		to {
+			opacity: 1;
+		}
+	}
+	@keyframes opacity-out {
+		from {
+			opacity: 1;
+		}
+		to {
+			opacity: 0;
+		}
+	}
+	/* Toast animations */
+	@keyframes slide-in {
+		from {
+			transform: translateX(calc(100% + 16px));
+			opacity: 0;
+		}
+		to {
+			transform: translateX(0);
+			opacity: 1;
+		}
+	}
+	@keyframes fade-out {
+		from {
+			opacity: 1;
+		}
+		to {
+			opacity: 0;
+		}
+	}
+	@keyframes swipe-out {
+		from {
+			transform: translateX(var(--radix-toast-swipe-move-x));
+		}
+		to {
+			transform: translateX(var(--radix-toast-swipe-end-x));
+		}
+	}
+	@keyframes toast-progress {
+		from {
+			max-width: 0;
+		}
+		to {
+			max-width: 100%;
+		}
+	}
+	@keyframes fade-up {
+		from {
+			opacity: 0;
+			transform: translateY(4px);
+		}
+		to {
+			opacity: 1;
+			transform: translateY(0);
+		}
+	}
+	@keyframes fade-down {
+		from {
+			opacity: 0;
+			transform: translateY(-4px);
+		}
+		to {
+			opacity: 1;
+			transform: translateY(0);
+		}
+	}
+	@keyframes checkbox-in {
+		from {
+			transform: scale(0.75);
+			opacity: 0;
+		}
+		to {
+			transform: scale(1);
+			opacity: 1;
+		}
+	}
+	@keyframes checkbox-out {
+		from {
+			transform: scale(1);
+			opacity: 1;
+		}
+		to {
+			transform: scale(0.75);
+			opacity: 0;
+		}
+	}
+	@keyframes dialog-in {
+		from {
+			transform: scale(0.9);
+			opacity: 0;
+		}
+		to {
+			transform: scale(1);
+			opacity: 1;
+		}
+	}
+	@keyframes dialog-out {
+		from {
+			transform: scale(1);
+			opacity: 1;
+		}
+		to {
+			transform: scale(0.9);
+			opacity: 0;
+		}
+	}
+	@keyframes accordion-down {
+		from {
+			height: 0;
+		}
+		to {
+			height: var(--radix-accordion-content-height);
+		}
+	}
+	@keyframes accordion-up {
+		from {
+			height: var(--radix-accordion-content-height);
+		}
+		to {
+			height: 0;
+		}
+	}
+	@keyframes collapsible-down {
+		from {
+			height: 0;
+		}
+		to {
+			height: var(--radix-collapsible-content-height);
+		}
+	}
+	@keyframes collapsible-up {
+		from {
+			height: var(--radix-collapsible-content-height);
+		}
+		to {
+			height: 0;
+		}
+	}
+}
+
+/*
+  The default border color has changed to `currentColor` in Tailwind CSS v4,
+  so we've added these compatibility styles to make sure everything still
+  looks the same as it did with Tailwind CSS v3.
+
+  If we ever want to remove these styles, we need to add an explicit border
+  color utility to any element that depends on these defaults.
+*/
+@layer base {
+	*,
+	::after,
+	::before,
+	::backdrop,
+	::file-selector-button {
+		border-color: var(--color-gray-200, currentColor);
+	}
+}
+
+@layer base {
+	:root {
+		line-height: 1.15;
+		color-scheme: light dark;
+		font-synthesis: none;
+		text-rendering: optimizeLegibility;
+		-webkit-font-smoothing: antialiased;
+		-moz-osx-font-smoothing: grayscale;
+		-webkit-text-size-adjust: 100%;
+	}
+
+	* {
+		box-sizing: border-box;
+		min-width: 0;
+	}
+
+	body {
+		@apply h-dvh font-sans text-foreground bg-background flex flex-col;
+	}
+
+	html {
+		--background-50: 255 255 255; /* rgb(255, 255, 255) */
+		--background-75: 252 252 252; /* rgb(252, 252, 252) */
+		--background-100: 240 240 240; /* rgb(240, 240, 240) */
+		--background-200: 228 228 228; /* rgb(228, 228, 228) */
+		--background-300: 216 216 216; /* rgb(216, 216, 216) */
+		--background-400: 204 204 204; /* rgb(204, 204, 204) */
+		--background-500: 180 180 180; /* rgb(180, 180, 180) */
+
+		--foreground-50: 10 10 10; /* rgb(10, 10, 10) */
+		--foreground-75: 12 12 12; /* rgb(12, 12, 12) */
+		--foreground-100: 18 18 18; /* rgb(18, 18, 18) */
+		--foreground-200: 27 27 27; /* rgb(27, 27, 27) */
+		--foreground-300: 35 35 35; /* rgb(35, 35, 35) */
+		--foreground-400: 41 41 41; /* rgb(41, 41, 41) */
+		--foreground-500: 51 51 51; /* rgb(51, 51, 51) */
+
+		--muted-300: 229 231 235; /* rgb(229, 231, 235) */
+		--muted-400: 209 213 219; /* rgb(209, 213, 219) */
+		--muted-500: 156 163 175; /* rgb(156, 163, 175) */
+
+		--muted-foreground-400: 107 114 128; /* rgb(107, 114, 128) */
+		--muted-foreground-500: 75 85 99; /* rgb(75, 85, 99) */
+	}
+
+	*.dark {
+		--background-50: 20 20 20; /* rgb(20, 20, 20) */
+		--background-75: 22 22 22; /* rgb(22, 22, 22) */
+		--background-100: 28 28 28; /* rgb(28, 28, 28) */
+		--background-200: 37 37 37; /* rgb(37, 37, 37) */
+		--background-300: 45 45 45; /* rgb(45, 45, 45) */
+		--background-400: 51 51 51; /* rgb(51, 51, 51) */
+		--background-500: 61 61 61; /* rgb(61, 61, 61) */
+
+		--foreground-50: 255 255 255; /* rgb(255, 255, 255) */
+		--foreground-75: 252 252 252; /* rgb(252, 252, 252) */
+		--foreground-100: 240 240 240; /* rgb(240, 240, 240) */
+		--foreground-200: 228 228 228; /* rgb(228, 228, 228) */
+		--foreground-300: 216 216 216; /* rgb(216, 216, 216) */
+		--foreground-400: 204 204 204; /* rgb(204, 204, 204) */
+		--foreground-500: 180 180 180; /* rgb(180, 180, 180) */
+
+		--muted-300: 229 231 235; /* rgb(229, 231, 235) */
+		--muted-400: 209 213 219; /* rgb(209, 213, 219) */
+		--muted-500: 156 163 175; /* rgb(156, 163, 175) */
+
+		--muted-foreground-400: 107 114 128; /* rgb(107, 114, 128) */
+		--muted-foreground-500: 75 85 99; /* rgb(75, 85, 99) */
+	}
+}
+
+/* Need this to make sure lucide icons play nice with tailwind sizing */
+.lucide {
+	width: 1em;
+	height: 1em;
+}
+
+/* Need this to disable transitions when setting theme */
+.no-transition * {
+	transition: none !important;
+}

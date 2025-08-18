@@ -1,6 +1,6 @@
 import {
-	SESSION_REVOKE_ALL_ROUTE_PATH,
 	makeSessionRevokeAllRouteResponse,
+	SESSION_REVOKE_ALL_ROUTE_PATH,
 } from "@pacetrack/schema";
 import { getSignedCookie } from "hono/cookie";
 import type { App } from "src";

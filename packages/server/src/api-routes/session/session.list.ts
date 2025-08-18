@@ -1,6 +1,6 @@
 import {
-	SESSION_LIST_ROUTE_PATH,
 	makeSessionListRouteResponse,
+	SESSION_LIST_ROUTE_PATH,
 } from "@pacetrack/schema";
 import type { App } from "src";
 import { sessions } from "src/utils/helpers/auth-session";

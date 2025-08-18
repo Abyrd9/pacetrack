@@ -1,53 +1,26 @@
 import {
-	ActionDataSchema,
-	TENANT_UPDATE_ROUTE_PATH,
-	TenantSchema,
+	account_to_tenant_table,
 	hasPermission,
 	makeTenantUpdateRouteResponse,
 	role_table,
+	TENANT_UPDATE_ROUTE_PATH,
+	type Tenant,
+	TenantUpdateRequestSchema,
 	tenant_table,
-	users_to_tenants_table,
-	type RouteResponse,
 } from "@pacetrack/schema";
 import { and, eq } from "drizzle-orm";
+import { nanoid } from "nanoid";
+import sharp from "sharp";
 import type { App } from "src";
 import { db } from "src/db";
 import { getParsedBody } from "src/utils/helpers/get-parsed-body";
-import { z } from "zod/v4";
-
-export const TenantUpdateFormSchema = TenantSchema.pick({
-	id: true,
-	name: true,
-	image_url: true,
-}).extend({
-	id: z.string(),
-	name: z.string({ error: "Name is required" }).min(1, {
-		message: "Name is required",
-	}),
-	image_url: z.url().optional(),
-});
-
-const ActionDataErrorSchema = ActionDataSchema(
-	TenantUpdateFormSchema,
-	"error",
-	TENANT_UPDATE_ROUTE_PATH,
-);
-const ActionDataSuccessSchema = ActionDataSchema(
-	TenantSchema,
-	"ok",
-	TENANT_UPDATE_ROUTE_PATH,
-);
-
-export type TenantUpdateRouteResponse = RouteResponse<
-	typeof ActionDataSuccessSchema,
-	typeof ActionDataErrorSchema
->;
+import { deleteFile, uploadFile } from "src/utils/helpers/s3";
 
 export function tenantUpdateRoute(app: App) {
 	app.post(TENANT_UPDATE_ROUTE_PATH, async (c) => {
 		try {
-			const userId = c.get("user_id");
-			const parsed = await getParsedBody(c.req, TenantUpdateFormSchema);
+			const accountId = c.get("account_id");
+			const parsed = await getParsedBody(c.req, TenantUpdateRequestSchema);
 
 			if (!parsed.success) {
 				return c.json(
@@ -60,19 +33,22 @@ export function tenantUpdateRoute(app: App) {
 				);
 			}
 
-			const { id, name, image_url } = parsed.data;
+			const { id, name, image } = parsed.data;
 
 			const roles = await db
 				.select({
-					userTenant: users_to_tenants_table,
+					userTenant: account_to_tenant_table,
 					role: role_table,
 				})
-				.from(users_to_tenants_table)
-				.leftJoin(role_table, eq(role_table.id, users_to_tenants_table.role_id))
+				.from(account_to_tenant_table)
+				.leftJoin(
+					role_table,
+					eq(role_table.id, account_to_tenant_table.role_id),
+				)
 				.where(
 					and(
-						eq(users_to_tenants_table.user_id, userId),
-						eq(users_to_tenants_table.tenant_id, id),
+						eq(account_to_tenant_table.account_id, accountId),
+						eq(account_to_tenant_table.tenant_id, id),
 					),
 				);
 
@@ -88,9 +64,57 @@ export function tenantUpdateRoute(app: App) {
 				);
 			}
 
+			const currentTenant = await db.query.tenant_table.findFirst({
+				where: eq(tenant_table.id, id),
+			});
+
+			if (!currentTenant) {
+				return c.json(
+					makeTenantUpdateRouteResponse({
+						key: TENANT_UPDATE_ROUTE_PATH,
+						status: "error",
+						errors: { global: "Tenant not found" },
+					}),
+					400,
+				);
+			}
+
+			let image_url_path: string | null = null;
+			if (image && image !== "REMOVE") {
+				// If user already has an avatar, remove it (best-effort)
+				if (currentTenant.image_url)
+					deleteFile(currentTenant.image_url).catch(() => {});
+
+				const buffer = Buffer.from(await image.arrayBuffer());
+				const png = await sharp(buffer).png().toBuffer();
+
+				// Add short uid so file name changes and CDN invalidates
+				const uid = nanoid();
+				const avatarFileName = `${currentTenant.id}_avatar_${uid}.png`;
+
+				const newPngFile = new File([new Uint8Array(png)], avatarFileName, {
+					type: "image/png",
+				});
+
+				image_url_path = await uploadFile(newPngFile, {
+					tenantId: currentTenant.id,
+					path: avatarFileName,
+				});
+			} else if (image === "REMOVE") {
+				// If user already has an avatar, remove it (best-effort)
+				if (currentTenant.image_url)
+					deleteFile(currentTenant.image_url).catch(() => {});
+				image_url_path = null;
+			}
+
+			const set: Partial<Tenant> = {};
+			if (name) set.name = name;
+			if (image_url_path) set.image_url = image_url_path;
+			if (image === "REMOVE") set.image_url = null;
+
 			const tenant = await db
 				.update(tenant_table)
-				.set({ name, image_url })
+				.set(set)
 				.where(eq(tenant_table.id, id))
 				.returning();
 

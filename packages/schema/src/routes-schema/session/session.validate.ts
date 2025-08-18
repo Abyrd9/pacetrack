@@ -11,6 +11,7 @@ export const ValidateSessionRequestSchema = z.object({
 export const ValidateSessionSuccessSchema = ActionDataSchema(
 	z.object({
 		user_id: z.string(),
+		account_id: z.string(),
 		tenant_id: z.string(),
 		role_id: z.string(),
 		session: SessionSchema,
@@ -22,6 +23,7 @@ export const ValidateSessionSuccessSchema = ActionDataSchema(
 export const ValidateSessionErrorSchema = ActionDataSchema(
 	z.object({
 		user_id: z.string().optional(),
+		account_id: z.string().optional(),
 		tenant_id: z.string().optional(),
 		role_id: z.string().optional(),
 	}),

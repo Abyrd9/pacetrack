@@ -1,9 +1,9 @@
 import {
+	account_to_tenant_table,
+	makeSessionSwitchTenantRouteResponse,
 	SESSION_SWITCH_TENANT_ROUTE_PATH,
 	SessionSwitchTenantRequestSchema,
-	makeSessionSwitchTenantRouteResponse,
 	tenant_table,
-	users_to_tenants_table,
 } from "@pacetrack/schema";
 import { and, eq } from "drizzle-orm";
 import { getSignedCookie } from "hono/cookie";
@@ -16,7 +16,7 @@ import { getParsedBody } from "src/utils/helpers/get-parsed-body";
 export function sessionSwitchTenantRoute(app: App) {
 	app.post(SESSION_SWITCH_TENANT_ROUTE_PATH, async (c) => {
 		try {
-			const userId = c.get("user_id");
+			const accountId = c.get("account_id");
 
 			if (!Bun.env.SESSION_SECRET) {
 				throw new Error("SESSION_SECRET is not set");
@@ -43,6 +43,7 @@ export function sessionSwitchTenantRoute(app: App) {
 				c.req,
 				SessionSwitchTenantRequestSchema,
 			);
+
 			if (!parsed.success) {
 				return c.json(
 					makeSessionSwitchTenantRouteResponse({
@@ -72,19 +73,19 @@ export function sessionSwitchTenantRoute(app: App) {
 				);
 			}
 
-			// Verify the user has access to this tenant
-			const userTenant = await db
+			// Verify the user account has access to this tenant
+			const accountTenant = await db
 				.select()
-				.from(users_to_tenants_table)
+				.from(account_to_tenant_table)
 				.where(
 					and(
-						eq(users_to_tenants_table.user_id, userId),
-						eq(users_to_tenants_table.tenant_id, tenant_id),
+						eq(account_to_tenant_table.account_id, accountId),
+						eq(account_to_tenant_table.tenant_id, tenant_id),
 					),
 				)
 				.limit(1);
 
-			if (userTenant.length === 0) {
+			if (accountTenant.length === 0) {
 				return c.json(
 					makeSessionSwitchTenantRouteResponse({
 						key: SESSION_SWITCH_TENANT_ROUTE_PATH,

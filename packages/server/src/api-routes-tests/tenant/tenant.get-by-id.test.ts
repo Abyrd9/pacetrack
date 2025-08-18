@@ -1,5 +1,5 @@
-import { TENANT_GET_BY_ID_ROUTE_PATH } from "@pacetrack/schema";
 import { beforeAll, beforeEach, describe, expect, mock, test } from "bun:test";
+import { TENANT_GET_BY_ID_ROUTE_PATH } from "@pacetrack/schema";
 import { resetDb } from "src/utils/test-helpers/reset-db";
 import {
 	makeAuthenticatedRequest,
@@ -47,7 +47,7 @@ describe("Tenant Get By ID Route", () => {
 		expect(body.errors.tenantId).toBeDefined();
 	});
 
-	test("should return 400 if tenant is not found", async () => {
+	test("should return 404 if tenant is not found", async () => {
 		const { cookie, csrfToken } = await setTestSession();
 
 		const response = await app.request(TENANT_GET_BY_ID_ROUTE_PATH, {
@@ -58,10 +58,10 @@ describe("Tenant Get By ID Route", () => {
 			}),
 		});
 
-		expect(response.status).toBe(400);
+		expect(response.status).toBe(404);
 		const body = await response.json();
 		expect(body.status).toBe("error");
-		expect(body.errors.global).toBe("Tenant not found");
+		expect(body.errors.global).toBe("Tenant not found or access denied");
 	});
 
 	test("should return tenant when found", async () => {

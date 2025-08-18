@@ -1,27 +1,30 @@
 {
-	"include": [
-		"**/*",
-		"**/.server/**/*",
-		"**/.client/**/*",
-		".react-router/types/**/*"
-	],
 	"compilerOptions": {
-		"lib": ["DOM", "DOM.Iterable", "ES2022"],
-		"types": ["node", "vite/client"],
-		"target": "ES2022",
-		"module": "ES2022",
-		"moduleResolution": "bundler",
-		"jsx": "react-jsx",
-		"rootDirs": [".", "./.react-router/types"],
-		"baseUrl": ".",
-		"paths": {
-			"~/*": ["./app/*"]
-		},
+		"strict": true,
 		"esModuleInterop": true,
-		"verbatimModuleSyntax": true,
-		"noEmit": true,
+		"jsx": "react-jsx",
+		"module": "ESNext",
+		"moduleResolution": "Bundler",
+		"lib": ["DOM", "DOM.Iterable", "ES2022"],
+		"isolatedModules": true,
 		"resolveJsonModule": true,
 		"skipLibCheck": true,
-		"strict": true
+		"target": "ES2022",
+		"allowJs": true,
+		"forceConsistentCasingInFileNames": true,
+
+		// Path aliases
+		"baseUrl": ".",
+		"paths": {
+			"~/*": ["./src/*"],
+			"@/components/*": ["./src/components/*"],
+			"@/utils/*": ["./src/utils/*"],
+			"@/styles/*": ["./src/styles/*"],
+			"@/assets/*": ["./src/assets/*"],
+			"@/constants/*": ["./src/constants/*"],
+			"@pacetrack/schema": ["../schema/src/index.ts"],
+			"@pacetrack/server": ["../server/src/index.ts"]
+		},
+		"noEmit": true
 	}
 }

@@ -1,5 +1,5 @@
-import { TENANT_UPDATE_ROUTE_PATH, tenant_table } from "@pacetrack/schema";
 import { beforeAll, beforeEach, describe, expect, mock, test } from "bun:test";
+import { TENANT_UPDATE_ROUTE_PATH, tenant_table } from "@pacetrack/schema";
 import { eq } from "drizzle-orm";
 import { resetDb } from "src/utils/test-helpers/reset-db";
 import {
@@ -40,8 +40,8 @@ describe("Tenant Update Route", () => {
 		const response = await app.request(TENANT_UPDATE_ROUTE_PATH, {
 			method: "POST",
 			body: JSON.stringify({
-				id: "test-id",
-				image_url: null,
+				// missing id entirely
+				name: "Updated Tenant",
 			}),
 			headers: makeAuthenticatedRequest(cookie, csrfToken, "POST", {
 				"Content-Type": "application/json",
@@ -51,28 +51,29 @@ describe("Tenant Update Route", () => {
 		expect(response.status).toBe(400);
 		const body = await response.json();
 		expect(body.status).toBe("error");
-		expect(body.errors.name).toBeDefined();
+		expect(body.errors.id).toBeDefined();
 	});
 
-	test("should return 400 if image_url is not a valid URL", async () => {
-		const { cookie, csrfToken } = await setTestSession();
+	test("should return 400 if image has invalid mime type", async () => {
+		const { cookie, csrfToken, tenant } = await setTestSession();
+
+		const form = new FormData();
+		form.append("id", tenant.id);
+		const badFile = new File([new Uint8Array([1, 2, 3])], "bad.txt", {
+			type: "text/plain",
+		});
+		form.append("image", badFile);
 
 		const response = await app.request(TENANT_UPDATE_ROUTE_PATH, {
 			method: "POST",
-			body: JSON.stringify({
-				id: "test-id",
-				name: "Test Tenant",
-				image_url: "not-a-url",
-			}),
-			headers: makeAuthenticatedRequest(cookie, csrfToken, "POST", {
-				"Content-Type": "application/json",
-			}),
+			body: form,
+			headers: makeAuthenticatedRequest(cookie, csrfToken, "POST"),
 		});
 
 		expect(response.status).toBe(400);
 		const body = await response.json();
 		expect(body.status).toBe("error");
-		expect(body.errors.image_url).toBeDefined();
+		expect(body.errors.image).toBeDefined();
 	});
 
 	test("should update tenant successfully", async () => {
@@ -83,7 +84,6 @@ describe("Tenant Update Route", () => {
 			body: JSON.stringify({
 				id: tenant.id,
 				name: "Updated Tenant Name",
-				image_url: "https://example.com/image.jpg",
 			}),
 			headers: makeAuthenticatedRequest(cookie, csrfToken, "POST", {
 				"Content-Type": "application/json",
@@ -94,7 +94,6 @@ describe("Tenant Update Route", () => {
 		const body = await response.json();
 		expect(body.status).toBe("ok");
 		expect(body.payload.name).toBe("Updated Tenant Name");
-		expect(body.payload.image_url).toBe("https://example.com/image.jpg");
 
 		// Verify the update in the database
 		const updatedTenant = await db
@@ -103,7 +102,6 @@ describe("Tenant Update Route", () => {
 			.where(eq(tenant_table.id, tenant.id))
 			.limit(1);
 		expect(updatedTenant[0].name).toBe("Updated Tenant Name");
-		expect(updatedTenant[0].image_url).toBe("https://example.com/image.jpg");
 	});
 
 	test("should work with form data", async () => {
@@ -112,7 +110,6 @@ describe("Tenant Update Route", () => {
 		const form = new FormData();
 		form.append("id", tenant.id);
 		form.append("name", "Updated Tenant Name");
-		form.append("image_url", "https://example.com/image.jpg");
 
 		const response = await app.request(TENANT_UPDATE_ROUTE_PATH, {
 			method: "POST",
@@ -124,6 +121,5 @@ describe("Tenant Update Route", () => {
 		const body = await response.json();
 		expect(body.status).toBe("ok");
 		expect(body.payload.name).toBe("Updated Tenant Name");
-		expect(body.payload.image_url).toBe("https://example.com/image.jpg");
 	});
 });

@@ -5,24 +5,32 @@ import { createSelectSchema } from "drizzle-zod";
 import { user_table } from "./user";
 
 export const account_table = pgTable("accounts", {
-  id: text("id")
-    .primaryKey()
-    .$defaultFn(() => createId()),
+	id: text("id")
+		.primaryKey()
+		.$defaultFn(() => createId()),
+	email: text("email").unique().notNull(),
+	password: text("password"),
+	image_url: text("image_url"),
+	display_name: text("display_name"),
 
-  // References
-  deleted_by: text("deleted_by").references(() => user_table.id),
-  created_by: text("created_by")
-    .notNull()
-    .references(() => user_table.id),
+	// Reset Password
+	reset_password_token: text("reset_password_token"),
+	reset_password_expires: timestamp("reset_password_expires"),
 
-  // Stripe
-  customer_id: text("customer_id"),
-  subscription_id: text("subscription_id"),
+	// Change Email
+	pending_email: text("pending_email"),
+	pending_email_token: text("pending_email_token"),
+	pending_email_expires: timestamp("pending_email_expires"),
 
-  // Generics
-  created_at: timestamp().default(sql`now()`),
-  deleted_at: timestamp("deleted_at"),
-  updated_at: timestamp("updated_at"),
+	// References
+	user_id: text("user_id")
+		.references(() => user_table.id)
+		.notNull(),
+
+	// Generics
+	created_at: timestamp().default(sql`now()`),
+	deleted_at: timestamp("deleted_at"),
+	updated_at: timestamp("updated_at"),
 });
 
 export type Account = InferSelectModel<typeof account_table>;

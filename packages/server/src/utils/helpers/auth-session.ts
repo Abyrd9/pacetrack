@@ -113,6 +113,7 @@ export const sessions = {
 			const session: Session = {
 				id: updatedSession.id,
 				user_id: updatedSession.user_id,
+				account_id: updatedSession.account_id,
 				tenant_id: updatedSession.tenant_id,
 				role_id: updatedSession.role_id,
 				expires_at: updatedSession.expires_at,
@@ -129,6 +130,7 @@ export const sessions = {
 			return {
 				session,
 				user: { id: updatedSession.user_id },
+				account: { id: updatedSession.account_id },
 				tenant: { id: updatedSession.tenant_id },
 				role: { id: updatedSession.role_id },
 			};
@@ -151,6 +153,7 @@ export const sessions = {
 	create: async ({
 		token,
 		userId,
+		accountId,
 		tenantId,
 		roleId,
 		ipAddress,
@@ -158,6 +161,7 @@ export const sessions = {
 	}: {
 		token: string;
 		userId: string;
+		accountId: string;
 		tenantId: string;
 		roleId: string;
 		ipAddress?: string | null;
@@ -174,6 +178,7 @@ export const sessions = {
 		const redisSession: Session = {
 			id: sessionId,
 			user_id: userId,
+			account_id: accountId,
 			tenant_id: tenantId,
 			role_id: roleId,
 			expires_at: expiresAt,
@@ -198,6 +203,7 @@ export const sessions = {
 		const session: Session = {
 			id: redisSession.id,
 			user_id: redisSession.user_id,
+			account_id: redisSession.account_id,
 			tenant_id: redisSession.tenant_id,
 			role_id: redisSession.role_id,
 			expires_at: new Date(redisSession.expires_at).getTime(),
@@ -296,6 +302,7 @@ export const sessions = {
 					sessions.push({
 						id: redisSession.id,
 						user_id: redisSession.user_id,
+						account_id: redisSession.account_id,
 						tenant_id: redisSession.tenant_id,
 						role_id: redisSession.role_id,
 						expires_at: new Date(redisSession.expires_at).getTime(),
@@ -359,7 +366,10 @@ export const sessions = {
 	updateSessionTenant: async ({
 		sessionId,
 		tenantId,
-	}: { sessionId: string; tenantId: string }) => {
+	}: {
+		sessionId: string;
+		tenantId: string;
+	}) => {
 		const redis = getRedisClient();
 
 		// Get session data
@@ -388,6 +398,66 @@ export const sessions = {
 		const session: Session = {
 			id: updatedSession.id,
 			user_id: updatedSession.user_id,
+			account_id: updatedSession.account_id,
+			tenant_id: updatedSession.tenant_id,
+			role_id: updatedSession.role_id,
+			expires_at: updatedSession.expires_at,
+			created_at: updatedSession.created_at,
+			last_activity: updatedSession.last_activity,
+			ip_address: updatedSession.ip_address,
+			user_agent: updatedSession.user_agent,
+			revoked_at: updatedSession.revoked_at ? updatedSession.revoked_at : null,
+		};
+
+		return session;
+	},
+
+	/**
+	 * Updates the account for a specific session
+	 * @param sessionId - The ID of the session to update
+	 * @param accountId - The new account ID for the session
+	 * @param tenantId - The new tenant ID for the session
+	 * @returns The updated Session object
+	 */
+	updateSessionAccount: async ({
+		sessionId,
+		accountId,
+		tenantId,
+	}: {
+		sessionId: string;
+		accountId: string;
+		tenantId: string;
+	}) => {
+		const redis = getRedisClient();
+
+		// Get session data
+		const sessionData = await redis.get(`session:${sessionId}`);
+		if (!sessionData) {
+			throw new Error("Session not found");
+		}
+
+		const redisSession: Session = JSON.parse(sessionData);
+
+		// Update account
+		const updatedSession: Session = {
+			...redisSession,
+			account_id: accountId,
+			tenant_id: tenantId,
+			last_activity: Date.now(),
+		};
+
+		// Update Redis with TTL (TODO: ASK ABOUT THIS)
+		await redis.set(`session:${sessionId}`, JSON.stringify(updatedSession));
+		await redis.expire(
+			`session:${sessionId}`,
+			Math.ceil((updatedSession.expires_at - Date.now()) / 1000), // Set TTL based on expiration
+		);
+
+		// Convert to Session type for compatibility
+		const session: Session = {
+			id: updatedSession.id,
+			user_id: updatedSession.user_id,
+			account_id: updatedSession.account_id,
 			tenant_id: updatedSession.tenant_id,
 			role_id: updatedSession.role_id,
 			expires_at: updatedSession.expires_at,

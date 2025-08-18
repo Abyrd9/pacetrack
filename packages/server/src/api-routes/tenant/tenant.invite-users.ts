@@ -1,11 +1,11 @@
 import {
-	TENANT_INVITE_USERS_ROUTE_PATH,
-	TenantInviteUsersRequestSchema,
+	account_to_tenant_table,
 	hasPermission,
 	makeTenantInviteUsersRouteResponse,
 	role_table,
+	TENANT_INVITE_USERS_ROUTE_PATH,
+	TenantInviteUsersRequestSchema,
 	user_invites_table,
-	users_to_tenants_table,
 } from "@pacetrack/schema";
 import { createId } from "@paralleldrive/cuid2";
 import { and, eq, sql } from "drizzle-orm";
@@ -16,7 +16,7 @@ import { getParsedBody } from "src/utils/helpers/get-parsed-body";
 export function tenantInviteUsersRoute(app: App) {
 	app.post(TENANT_INVITE_USERS_ROUTE_PATH, async (c) => {
 		try {
-			const userId = c.get("user_id");
+			const accountId = c.get("account_id");
 
 			const parsed = await getParsedBody(c.req, TenantInviteUsersRequestSchema);
 
@@ -33,12 +33,15 @@ export function tenantInviteUsersRoute(app: App) {
 
 			const usersToTenantsResponse = await db
 				.select({
-					userTenant: users_to_tenants_table,
+					userTenant: account_to_tenant_table,
 					role: role_table,
 				})
-				.from(users_to_tenants_table)
-				.leftJoin(role_table, eq(role_table.id, users_to_tenants_table.role_id))
-				.where(eq(users_to_tenants_table.user_id, userId));
+				.from(account_to_tenant_table)
+				.leftJoin(
+					role_table,
+					eq(role_table.id, account_to_tenant_table.role_id),
+				)
+				.where(eq(account_to_tenant_table.account_id, accountId));
 
 			const role = usersToTenantsResponse[0]?.role;
 

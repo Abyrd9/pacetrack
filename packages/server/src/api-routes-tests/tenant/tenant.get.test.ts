@@ -1,10 +1,10 @@
-import {
-	TENANT_GET_ROUTE_PATH,
-	tenant_table,
-	users_to_tenants_table,
-	type Tenant,
-} from "@pacetrack/schema";
 import { beforeAll, beforeEach, describe, expect, mock, test } from "bun:test";
+import {
+	account_to_tenant_table,
+	TENANT_GET_ROUTE_PATH,
+	type Tenant,
+	tenant_table,
+} from "@pacetrack/schema";
 import { sql } from "drizzle-orm";
 import { resetDb } from "src/utils/test-helpers/reset-db";
 import app from "../..";
@@ -52,22 +52,22 @@ describe("Tenant Get Route", () => {
 
 	test("should return user's tenants", async () => {
 		// Create a test user with a tenant
-		const { user, cookie, tenant, role } = await setTestSession();
+		const { user, account, cookie, tenant, role } = await setTestSession();
 
 		// Create an additional tenant for the user
 		const additionalTenant = await db
 			.insert(tenant_table)
 			.values({
 				name: "Additional Tenant",
-				account_id: tenant.account_id,
+				membership_id: tenant.membership_id,
 				created_by: user.id,
 				created_at: sql`now()`,
 				updated_at: sql`now()`,
 			})
 			.returning();
 
-		await db.insert(users_to_tenants_table).values({
-			user_id: user.id,
+		await db.insert(account_to_tenant_table).values({
+			account_id: account.id,
 			tenant_id: additionalTenant[0].id,
 			role_id: role.id,
 			created_at: sql`now()`,

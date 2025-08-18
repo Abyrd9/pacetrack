@@ -1,16 +1,18 @@
 {
 	"name": "pacetrack",
 	"scripts": {
-		"typecheck": "bun x tsc --noEmit --project .",
-		"typecheck:watch": "bun x tsc --noEmit --project . --watch",
-		"check-updates": "bun run scripts/check-updates.ts"
+		"typecheck": "bun run scripts/typecheck-all.ts",
+		"check-updates": "bun run scripts/check-updates.ts",
+		"clean": "rm -rf node_modules && rm -rf packages/*/node_modules && bun install"
 	},
 	"devDependencies": {
-		"@biomejs/biome": "^2.1.2",
-		"typescript": "^5.8.3"
+		"@biomejs/biome": "^2.1.4",
+		"typescript": "^5.9.2"
 	},
 	"private": true,
-	"workspaces": ["packages/*"],
+	"workspaces": [
+		"packages/*"
+	],
 	"harbor": {
 		"domain": "localhost",
 		"useSudo": false,

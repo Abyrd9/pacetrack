@@ -1,30 +1,56 @@
-import { parseZodFormData } from "@abyrd9/zod-form-data";
-import { parseZodData } from "@abyrd9/zod-form-data";
+import { parseZodData, parseZodFormData } from "@abyrd9/zod-form-data";
 import type { HonoRequest } from "hono";
 import type { z } from "zod/v4";
+import { logger } from "./logger";
 
 export async function getParsedBody<Schema extends z.ZodType>(
-  req: HonoRequest,
-  schema: Schema
+	req: HonoRequest,
+	schema: Schema,
+	requestId?: string,
 ): Promise<
-  | ReturnType<typeof parseZodData<Schema>>
-  | ReturnType<typeof parseZodFormData<Schema>>
+	| ReturnType<typeof parseZodData<Schema>>
+	| ReturnType<typeof parseZodFormData<Schema>>
 > {
-  const contentType = req.header("Content-Type");
+	const contentType = req.header("Content-Type");
 
-  if (contentType?.includes("multipart/form-data")) {
-    const form = await req.formData();
-    return parseZodFormData(form, {
-      schema: schema,
-    });
-  }
+	logger.info(
+		"GET_PARSED_BODY",
+		`Starting body parsing - Content-Type: ${contentType || "undefined"}`,
+		{ requestId },
+	);
 
-  if (contentType?.includes("application/json")) {
-    const json = await req.json();
-    return parseZodData(json, {
-      schema: schema,
-    });
-  }
+	if (contentType?.includes("multipart/form-data")) {
+		logger.info("GET_PARSED_BODY", "Parsing multipart/form-data", {
+			requestId,
+		});
+		const form = await req.formData();
+		const result = parseZodFormData(form, {
+			schema: schema,
+		});
+		logger.info(
+			"GET_PARSED_BODY",
+			`Multipart parsing ${result.success ? "succeeded" : "failed"}`,
+			{ requestId },
+		);
+		return result;
+	}
 
-  throw new Error("Unsupported content type");
+	if (contentType?.includes("application/json")) {
+		logger.info("GET_PARSED_BODY", "Parsing application/json", { requestId });
+		const json = await req.json();
+		const result = parseZodData(json, {
+			schema: schema,
+		});
+		logger.info(
+			"GET_PARSED_BODY",
+			`JSON parsing ${result.success ? "succeeded" : "failed"}`,
+			{ requestId },
+		);
+		return result;
+	}
+
+	logger.error("GET_PARSED_BODY", `Unsupported content type: ${contentType}`, {
+		requestId,
+	});
+	throw new Error("Unsupported content type");
 }

@@ -159,13 +159,86 @@ Retry-After: 900
 ```typescript
 // Applied automatically in src/index.ts
 app.use("/api/auth/*", authRateLimit);
-app.use("/serve/*", serveRateLimit);
 app.use("/api/*", apiRateLimit);
 ```
 
 ---
 
-## 4. How File Uploading Works
+## 4. How Logging Works
+
+### Configurable Logging System
+
+The server includes a powerful, configurable logging system that allows you to control logging output based on environment variables or runtime configuration.
+
+#### Environment Variables
+
+Control logging behavior using these environment variables:
+
+```bash
+# Global logging control
+LOGGING_ENABLED=false                    # Turn off all logging
+LOG_LEVEL=warn                          # Set minimum log level (debug, info, warn, error)
+
+# Category-based filtering
+LOG_CATEGORIES_ENABLED=false            # Turn off category-based logging
+LOG_CATEGORIES_INCLUDE=auth,user,tenant # Only log specific categories
+LOG_CATEGORIES_EXCLUDE=middleware,debug # Exclude specific categories
+
+# Middleware-specific control
+LOG_MIDDLEWARE_ENABLED=false            # Turn off middleware logging
+LOG_MIDDLEWARE_INCLUDE=auth,rate-limit  # Only log specific middleware
+LOG_MIDDLEWARE_EXCLUDE=debug            # Exclude specific middleware
+```
+
+#### Runtime Configuration
+
+You can also control logging at runtime using the `updateConfig` method:
+
+```typescript
+import { logger } from './utils/helpers/logger';
+
+// Turn off all logging during tests
+logger.updateConfig({ enabled: false });
+
+// Turn off middleware logging
+logger.updateConfig({
+  middleware: { enabled: false }
+});
+
+// Only log specific categories
+logger.updateConfig({
+  categories: { include: ['auth', 'user'] }
+});
+```
+
+#### Test Setup
+
+```typescript
+// In your test setup file
+import { logger } from './utils/helpers/logger';
+
+beforeAll(() => {
+  // Turn off all logging during tests
+  logger.updateConfig({ enabled: false });
+});
+```
+
+#### Log Categories
+
+Common log categories used throughout the application:
+
+- `auth` - Authentication and authorization
+- `user` - User management operations
+- `tenant` - Tenant management operations
+- `database` - Database operations
+- `middleware` - Middleware execution
+- `rate-limit` - Rate limiting
+- `csrf` - CSRF protection
+- `session` - Session management
+
+---
+
+## 5. How File Uploading Works
 
 ### S3/MinIO Storage
 
@@ -235,6 +308,11 @@ STRIPE_SECRET_KEY=sk_test_your-stripe-key
 
 # Rate Limiting
 REDIS_URL=redis://localhost:6379
+
+# Logging
+LOGGING_ENABLED=true
+LOG_LEVEL=info
+LOG_MIDDLEWARE_ENABLED=true
 ```
 
 ## Quick Start

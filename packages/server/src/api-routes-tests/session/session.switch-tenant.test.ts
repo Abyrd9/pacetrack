@@ -1,11 +1,12 @@
-import {
-	SESSION_SWITCH_TENANT_ROUTE_PATH,
-	account_table,
-	tenant_table,
-	users_to_tenants_table,
-	type SessionSwitchTenantRouteResponse,
-} from "@pacetrack/schema";
 import { beforeAll, describe, expect, test } from "bun:test";
+import {
+	account_table,
+	account_to_tenant_table,
+	membership_table,
+	SESSION_SWITCH_TENANT_ROUTE_PATH,
+	type SessionSwitchTenantRouteResponse,
+	tenant_table,
+} from "@pacetrack/schema";
 import { resetDb } from "src/utils/test-helpers/reset-db";
 import {
 	makeAuthenticatedRequest,
@@ -20,31 +21,29 @@ beforeAll(async () => {
 
 describe("Session Switch Tenant Route", () => {
 	test("successfully switches to another tenant the user has access to", async () => {
-		const { cookie, csrfToken, tenant, user } = await setTestSession();
+		const { cookie, csrfToken, tenant, user, account } = await setTestSession();
 
 		// Create a new tenant for the same user
 		const [newTenant] = await db
 			.insert(tenant_table)
 			.values({
 				name: "New Tenant",
-				account_id: tenant.account_id,
+				membership_id: tenant.membership_id,
 				created_by: user.id,
 				kind: "org",
 			})
 			.returning();
 
-		// Associate the user with the new tenant
+		// Associate the account with the new tenant
 		const ownerRole = await db.query.role_table.findFirst({
 			where: (role, { eq }) => eq(role.kind, "owner"),
 		});
 		if (!ownerRole) throw new Error("Owner role not found");
 
-		await db.insert(users_to_tenants_table).values({
-			user_id: user.id,
+		await db.insert(account_to_tenant_table).values({
+			account_id: account.id,
 			tenant_id: newTenant.id,
 			role_id: ownerRole.id,
-			is_primary_contact: true,
-			is_billing_contact: true,
 		});
 
 		const response = await app.request(SESSION_SWITCH_TENANT_ROUTE_PATH, {
@@ -81,13 +80,10 @@ describe("Session Switch Tenant Route", () => {
 		const { cookie, csrfToken } = await setTestSession();
 
 		// Create a separate user and account for a different user
-		const { user: otherUser } = await setTestSession({
-			email: "other@test.com",
-			password: "password123",
-		});
+		const { user: otherUser } = await setTestSession();
 
-		const [otherAccount] = await db
-			.insert(account_table)
+		const [otherMembership] = await db
+			.insert(membership_table)
 			.values({
 				created_by: otherUser.id,
 				customer_id: "cus_456",
@@ -99,7 +95,7 @@ describe("Session Switch Tenant Route", () => {
 			.insert(tenant_table)
 			.values({
 				name: "Other Tenant",
-				account_id: otherAccount.id,
+				membership_id: otherMembership.id,
 				created_by: otherUser.id,
 				kind: "org",
 			})
@@ -171,31 +167,35 @@ describe("Session Switch Tenant Route", () => {
 	});
 
 	test("can switch between multiple tenants the user has access to", async () => {
-		const { cookie, csrfToken, tenant: tenant1, user } = await setTestSession();
+		const {
+			cookie,
+			csrfToken,
+			tenant: tenant1,
+			user,
+			account,
+		} = await setTestSession();
 
 		// Create a second tenant for the same user
 		const [tenant2] = await db
 			.insert(tenant_table)
 			.values({
 				name: "Second Tenant",
-				account_id: tenant1.account_id,
+				membership_id: tenant1.membership_id,
 				created_by: user.id,
 				kind: "org",
 			})
 			.returning();
 
-		// Associate the user with the second tenant
+		// Associate the account with the second tenant
 		const ownerRole = await db.query.role_table.findFirst({
 			where: (role, { eq }) => eq(role.kind, "owner"),
 		});
 		if (!ownerRole) throw new Error("Owner role not found");
 
-		await db.insert(users_to_tenants_table).values({
-			user_id: user.id,
+		await db.insert(account_to_tenant_table).values({
+			account_id: account.id,
 			tenant_id: tenant2.id,
 			role_id: ownerRole.id,
-			is_primary_contact: true,
-			is_billing_contact: true,
 		});
 
 		// Switch to tenant2

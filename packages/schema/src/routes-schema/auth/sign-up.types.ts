@@ -1,4 +1,5 @@
 import { z } from "zod/v4";
+import { AccountSchema } from "../../db-schema/account";
 import { UserSchema } from "../../db-schema/user";
 import { ActionDataSchema, type RouteResponse } from "../../types/generics";
 
@@ -34,8 +35,8 @@ export const SignUpActionDataErrorSchema = ActionDataSchema(
 );
 export const SignUpActionDataSuccessSchema = ActionDataSchema(
 	z.object({
-		accountId: z.string(),
 		user: UserSchema,
+		account: AccountSchema,
 		csrfToken: z.string(), // CSRF token for subsequent requests
 	}),
 	"ok",

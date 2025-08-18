@@ -1,8 +1,8 @@
+import { beforeAll, beforeEach, describe, expect, mock, test } from "bun:test";
 import {
 	TENANT_CREATE_ROUTE_PATH,
 	type TenantCreateRouteResponse,
 } from "@pacetrack/schema";
-import { beforeAll, beforeEach, describe, expect, mock, test } from "bun:test";
 import { resetDb } from "src/utils/test-helpers/reset-db";
 import {
 	makeAuthenticatedRequest,
@@ -67,17 +67,20 @@ describe("Admin Tenant Create Route", () => {
 
 		expect(body.status).toBe("ok");
 		expect(body.payload).toBeDefined();
-		expect(body.payload?.account_id).toBeDefined();
+		expect(body.payload?.membership_id).toBeDefined();
 	});
 
-	test("should return 400 if image_url is invalid", async () => {
+	test("should return 400 if image provided has invalid mime type", async () => {
 		if (!cookie || !csrfToken)
 			throw new Error("Cookie or CSRF token is not set");
 
 		const form = new FormData();
 		form.append("name", "Test Tenant");
 		form.append("account_id", "acc_123");
-		form.append("image_url", "not-a-url");
+		const bad = new File([new Uint8Array([1, 2, 3])], "bad.txt", {
+			type: "text/plain",
+		});
+		form.append("image", bad);
 
 		const response = await app.request(TENANT_CREATE_ROUTE_PATH, {
 			method: "POST",
@@ -90,17 +93,16 @@ describe("Admin Tenant Create Route", () => {
 
 		expect(body.status).toBe("error");
 		expect(body.errors).toBeDefined();
-		expect(body.errors?.image_url).toBeDefined();
+		expect(body.errors?.image).toBeDefined();
 	});
 
 	test("should create tenant successfully", async () => {
 		await resetDb();
-		const { account, cookie, csrfToken } = await setTestSession();
+		const { membership, cookie, csrfToken } = await setTestSession();
 
 		const form = new FormData();
 		form.append("name", "Test Tenant");
-		form.append("account_id", account.id);
-		form.append("image_url", "https://example.com/image.jpg");
+		form.append("membership_id", membership.id);
 
 		const response = await app.request(TENANT_CREATE_ROUTE_PATH, {
 			method: "POST",
@@ -114,20 +116,20 @@ describe("Admin Tenant Create Route", () => {
 		expect(body.status).toBe("ok");
 		expect(body.payload).toBeDefined();
 		expect(body.payload?.name).toBe("Test Tenant");
-		expect(body.payload?.account_id).toBe(account.id);
-		expect(body.payload?.image_url).toBe("https://example.com/image.jpg");
+		expect(body.payload?.membership_id).toBe(membership.id);
+		// no direct image_url support; only file upload optional
 
 		// Verify tenant was created in database
 		const tenant = await db.query.tenant_table.findFirst({
 			where: (tenants, { eq }) => eq(tenants.name, "Test Tenant"),
 		});
 		expect(tenant).toBeDefined();
-		expect(tenant?.account_id).toBe(account.id);
+		expect(tenant?.membership_id).toBe(membership.id);
 	});
 
 	test("should handle JSON request body", async () => {
 		await resetDb();
-		const { account, cookie, csrfToken } = await setTestSession();
+		const { membership, cookie, csrfToken } = await setTestSession();
 
 		const response = await app.request(TENANT_CREATE_ROUTE_PATH, {
 			method: "POST",
@@ -136,8 +138,7 @@ describe("Admin Tenant Create Route", () => {
 			}),
 			body: JSON.stringify({
 				name: "Test Tenant",
-				account_id: account.id,
-				image_url: "https://example.com/image.jpg",
+				membership_id: membership.id,
 			}),
 		});
 
@@ -168,7 +169,7 @@ describe("Admin Tenant Create Route", () => {
 
 		expect(response.status).toBe(403);
 		const body = await response.json();
-		expect(body.error).toBe("CSRF token required");
+		expect(body.errors.global).toBe("CSRF token required");
 	});
 
 	test("should return 403 if CSRF token is invalid", async () => {
@@ -190,6 +191,6 @@ describe("Admin Tenant Create Route", () => {
 
 		expect(response.status).toBe(403);
 		const body = await response.json();
-		expect(body.error).toBe("Invalid CSRF token");
+		expect(body.errors.global).toBe("Invalid CSRF token");
 	});
 });

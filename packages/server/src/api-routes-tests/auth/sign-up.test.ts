@@ -1,9 +1,9 @@
+import { beforeAll, describe, expect, test } from "bun:test";
 import {
 	DEFAULT_ROLES,
 	SIGN_UP_ROUTE_PATH,
 	type SignUpRouteResponse,
 } from "@pacetrack/schema";
-import { beforeAll, describe, expect, test } from "bun:test";
 import { resetDb } from "src/utils/test-helpers/reset-db";
 import app from "../..";
 import { db } from "../../db";
@@ -140,8 +140,8 @@ describe("Sign Up Route", () => {
 
 		expect(body.status).toBe("ok");
 		expect(body.payload).toBeDefined();
-		expect(body.payload?.accountId).toBeDefined();
-		expect(body.payload?.user.email).toBe("test@test.com");
+		expect(body.payload?.account.email).toBe("test@test.com");
+		expect(body.payload?.user).toBeDefined();
 		expect(body.payload?.csrfToken).toBeDefined(); // Verify CSRF token is returned
 	});
 
@@ -161,7 +161,7 @@ describe("Sign Up Route", () => {
 
 		expect(body.status).toBe("error");
 		expect(body.errors).toBeDefined();
-		expect(body.errors?.form).toEqual("User already exists");
+		expect(body.errors?.form).toEqual("Account already exists");
 	});
 
 	// Add new test for successful signup with tenant and stripe creation
@@ -181,15 +181,15 @@ describe("Sign Up Route", () => {
 		expect(body.status).toBe("ok");
 		expect(body.payload?.csrfToken).toBeDefined(); // Verify CSRF token is returned
 
-		// Verify user was created
-		const user = await db.query.user_table.findFirst({
-			where: (users, { eq }) => eq(users.email, "new@test.com"),
+		// Verify account was created
+		const account = await db.query.account_table.findFirst({
+			where: (accounts, { eq }) => eq(accounts.email, "new@test.com"),
 		});
-		expect(user).toBeDefined();
+		expect(account).toBeDefined();
 
-		const getTenantAndRole = await db.query.users_to_tenants_table.findFirst({
-			where: (users_to_tenants, { eq }) =>
-				eq(users_to_tenants.user_id, user?.id ?? ""),
+		const getTenantAndRole = await db.query.account_to_tenant_table.findFirst({
+			where: (account_to_tenants, { eq }) =>
+				eq(account_to_tenants.account_id, account?.id ?? ""),
 		});
 		expect(getTenantAndRole).toBeDefined();
 		expect(getTenantAndRole?.tenant_id).toBeDefined();
@@ -210,16 +210,13 @@ describe("Sign Up Route", () => {
 		expect(role).toBeDefined();
 		expect(role?.allowed).toEqual(DEFAULT_ROLES.OWNER.allowed);
 
-		// Verify account was created with stripe customer
-		const account = await db.query.account_table.findFirst({
-			where: (accounts, { eq, and }) =>
-				and(
-					eq(accounts.created_by, user?.id ?? ""),
-					eq(accounts.id, tenant?.account_id ?? ""),
-				),
+		// Verify membership was created with stripe customer
+		const membership = await db.query.membership_table.findFirst({
+			where: (memberships, { eq }) =>
+				eq(memberships.created_by, account?.user_id ?? ""),
 		});
-		expect(account).toBeDefined();
-		expect(account?.customer_id).toBeDefined();
-		expect(account?.subscription_id).toBeDefined();
+		expect(membership).toBeDefined();
+		expect(membership?.customer_id).toBeDefined();
+		expect(membership?.subscription_id).toBeDefined();
 	});
 });

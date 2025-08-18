@@ -1,14 +1,15 @@
+import { beforeAll, describe, expect, test } from "bun:test";
 import {
-	DEFAULT_ROLES,
-	SIGN_IN_ROUTE_PATH,
 	account_table,
+	account_to_tenant_table,
+	DEFAULT_ROLES,
+	membership_table,
 	role_table,
+	SIGN_IN_ROUTE_PATH,
+	type SignInRouteResponse,
 	tenant_table,
 	user_table,
-	users_to_tenants_table,
-	type SignInRouteResponse,
 } from "@pacetrack/schema";
-import { beforeAll, describe, expect, test } from "bun:test";
 import { sql } from "drizzle-orm";
 import { resetDb } from "src/utils/test-helpers/reset-db";
 import app from "../..";
@@ -17,59 +18,56 @@ import { db } from "../../db";
 beforeAll(async () => {
 	await resetDb();
 
-	// Set test session and then immediately invalidate it
+	// Create a test user and account for sign-in tests
 	const hashedPassword = await Bun.password.hash("password123");
-	const [user] = await db
-		.insert(user_table)
+
+	// Create user (no email/password here)
+	const [user] = await db.insert(user_table).values({}).returning();
+
+	// Create account with email/password
+	const [account] = await db
+		.insert(account_table)
 		.values({
 			email: "test@example.com",
 			password: hashedPassword,
+			user_id: user.id,
 		})
 		.returning();
 
-	const [account] = await db
-		.insert(account_table)
+	// Create membership
+	const [membership] = await db
+		.insert(membership_table)
 		.values({
 			created_by: user.id,
 			customer_id: "cus_123",
 			subscription_id: "sub_123",
-			created_at: sql`now()`,
-			updated_at: sql`now()`,
 		})
 		.returning();
 
-	// Now with this account we need to make a personal tenant and add the user to it
+	// Create personal tenant linked to membership
 	const [tenant] = await db
 		.insert(tenant_table)
 		.values({
 			name: "Personal",
-			account_id: account.id,
+			membership_id: membership.id,
 			created_by: user.id,
-			created_at: sql`now()`,
-			updated_at: sql`now()`,
 		})
 		.returning();
 
-	// Create the Owner role and associate the user with the tenant
+	// Create the Owner role and associate the account with the tenant
 	const [role] = await db
 		.insert(role_table)
 		.values({
 			name: DEFAULT_ROLES.OWNER.name,
 			kind: DEFAULT_ROLES.OWNER.kind,
 			allowed: DEFAULT_ROLES.OWNER.allowed,
-			created_at: sql`now()`,
-			updated_at: sql`now()`,
 		})
 		.returning();
 
-	await db.insert(users_to_tenants_table).values({
-		user_id: user.id,
+	await db.insert(account_to_tenant_table).values({
+		account_id: account.id,
 		tenant_id: tenant.id,
 		role_id: role.id,
-		is_primary_contact: true,
-		is_billing_contact: true,
-		created_at: sql`now()`,
-		updated_at: sql`now()`,
 	});
 });
 
@@ -195,7 +193,8 @@ describe("Sign In Route", () => {
 
 		expect(body.status).toBe("ok");
 		expect(body.payload).toBeDefined();
-		expect(body.payload?.user.email).toBe("test@example.com");
+		expect(body.payload?.account.email).toBe("test@example.com");
+		expect(body.payload?.user).toBeDefined();
 		expect(body.payload?.csrfToken).toBeDefined(); // Verify CSRF token is returned
 
 		// Check for session cookie
