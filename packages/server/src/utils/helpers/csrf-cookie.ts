@@ -1,5 +1,6 @@
 import type { Context } from "hono";
 import { deleteCookie, setCookie } from "hono/cookie";
+import { getCookieDomain } from "./get-cookie-domain";
 
 export async function setCSRFTokenCookie(
   c: Context,
@@ -15,7 +16,7 @@ export async function setCSRFTokenCookie(
     sameSite: "Lax",
     expires: expiresDate,
     path: "/",
-    domain: Bun.env.NODE_ENV !== "production" ? "localhost" : undefined,
+    domain: getCookieDomain(),
     secure: Bun.env.NODE_ENV === "production",
   });
 }

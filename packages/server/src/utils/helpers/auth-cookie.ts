@@ -1,5 +1,6 @@
 import type { Context } from "hono";
 import { setSignedCookie } from "hono/cookie";
+import { getCookieDomain } from "./get-cookie-domain";
 
 export async function setSessionTokenCookie(
   c: Context,
@@ -22,7 +23,7 @@ export async function setSessionTokenCookie(
       sameSite: "Lax",
       expires: expiresDate,
       path: "/",
-      domain: Bun.env.NODE_ENV !== "production" ? "localhost" : undefined,
+      domain: getCookieDomain(),
       secure: Bun.env.NODE_ENV === "production",
     }
   );

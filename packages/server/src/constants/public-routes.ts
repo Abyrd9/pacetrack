@@ -8,6 +8,7 @@ import {
 } from "@pacetrack/schema";
 
 export const PUBLIC_API_ROUTES = [
+  "/api/healthcheck",
   SIGN_IN_ROUTE_PATH,
   SIGN_UP_ROUTE_PATH,
   FORGOT_PASSWORD_ROUTE_PATH,

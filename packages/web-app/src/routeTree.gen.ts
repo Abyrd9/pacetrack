@@ -21,6 +21,7 @@ import { Route as AuthSignInRouteImport } from './routes/auth.sign-in'
 import { Route as AuthForgotPasswordRouteImport } from './routes/auth.forgot-password'
 import { Route as AppSettingsRouteImport } from './routes/_app.settings'
 import { ServerRoute as CallbackIndexServerRouteImport } from './routes/callback.index'
+import { ServerRoute as ApiHealthcheckServerRouteImport } from './routes/api.healthcheck'
 
 const rootServerRouteImport = createServerRootRoute()
 
@@ -72,6 +73,11 @@ const AppSettingsRoute = AppSettingsRouteImport.update({
 const CallbackIndexServerRoute = CallbackIndexServerRouteImport.update({
   id: '/callback/',
   path: '/callback/',
+  getParentRoute: () => rootServerRouteImport,
+} as any)
+const ApiHealthcheckServerRoute = ApiHealthcheckServerRouteImport.update({
+  id: '/api/healthcheck',
+  path: '/api/healthcheck',
   getParentRoute: () => rootServerRouteImport,
 } as any)
 
@@ -145,24 +151,28 @@ export interface RootRouteChildren {
   CallbackConfirmEmailChangeRoute: typeof CallbackConfirmEmailChangeRoute
 }
 export interface FileServerRoutesByFullPath {
+  '/api/healthcheck': typeof ApiHealthcheckServerRoute
   '/callback': typeof CallbackIndexServerRoute
 }
 export interface FileServerRoutesByTo {
+  '/api/healthcheck': typeof ApiHealthcheckServerRoute
   '/callback': typeof CallbackIndexServerRoute
 }
 export interface FileServerRoutesById {
   __root__: typeof rootServerRouteImport
+  '/api/healthcheck': typeof ApiHealthcheckServerRoute
   '/callback/': typeof CallbackIndexServerRoute
 }
 export interface FileServerRouteTypes {
   fileServerRoutesByFullPath: FileServerRoutesByFullPath
-  fullPaths: '/callback'
+  fullPaths: '/api/healthcheck' | '/callback'
   fileServerRoutesByTo: FileServerRoutesByTo
-  to: '/callback'
-  id: '__root__' | '/callback/'
+  to: '/api/healthcheck' | '/callback'
+  id: '__root__' | '/api/healthcheck' | '/callback/'
   fileServerRoutesById: FileServerRoutesById
 }
 export interface RootServerRouteChildren {
+  ApiHealthcheckServerRoute: typeof ApiHealthcheckServerRoute
   CallbackIndexServerRoute: typeof CallbackIndexServerRoute
 }
 
@@ -242,6 +252,13 @@ declare module '@tanstack/react-start/server' {
       preLoaderRoute: typeof CallbackIndexServerRouteImport
       parentRoute: typeof rootServerRouteImport
     }
+    '/api/healthcheck': {
+      id: '/api/healthcheck'
+      path: '/api/healthcheck'
+      fullPath: '/api/healthcheck'
+      preLoaderRoute: typeof ApiHealthcheckServerRouteImport
+      parentRoute: typeof rootServerRouteImport
+    }
   }
 }
 
@@ -282,6 +299,7 @@ export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
 const rootServerRouteChildren: RootServerRouteChildren = {
+  ApiHealthcheckServerRoute: ApiHealthcheckServerRoute,
   CallbackIndexServerRoute: CallbackIndexServerRoute,
 }
 export const serverRouteTree = rootServerRouteImport

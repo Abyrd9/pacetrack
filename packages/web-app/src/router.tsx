@@ -5,12 +5,9 @@ import { createRouter as createTanStackRouter } from "@tanstack/react-router";
 import { routerWithQueryClient } from "@tanstack/react-router-with-query";
 import { DefaultCatchBoundary } from "./components/DefaultCatchBoundary";
 import { routeTree } from "./routeTree.gen";
+import { getBaseApiUrl } from "./utils/helpers/get-api-base-url";
 
 export const tanstackQueryClient = new QueryClient();
-
-if (!import.meta.env.VITE_API_BASE_URL) {
-	throw new Error("VITE_API_BASE_URL is not set");
-}
 
 export function createRouter() {
 	return routerWithQueryClient(
@@ -23,7 +20,7 @@ export function createRouter() {
 			defaultErrorComponent: DefaultCatchBoundary,
 			scrollRestoration: true,
 			context: {
-				BASE_API_URL: import.meta.env.VITE_API_BASE_URL,
+				BASE_API_URL: getBaseApiUrl(),
 				queryClient: tanstackQueryClient,
 			},
 		}),

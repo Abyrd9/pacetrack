@@ -1,0 +1,1 @@
+import{j as d,c}from"./main-CGtgWssC.js";const t=({children:a,className:o,ref:r,...s})=>d.jsx("div",{ref:r,className:c("rounded-sm border border-background-300 bg-background-offset p-4 shadow-card shadow-black/5 dark:shadow-black/50",o),...s,children:a}),b=Object.assign(t,{});export{b as C};

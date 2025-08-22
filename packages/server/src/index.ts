@@ -1,6 +1,5 @@
 import type { Session } from "@pacetrack/schema";
 import { Hono } from "hono";
-import { cors } from "hono/cors";
 import { accountAcceptInviteRoute } from "./api-routes/account/account.accept-invite";
 import { accountChangeEmailRoute } from "./api-routes/account/account.change-email";
 import { accountConfirmEmailChangeRoute } from "./api-routes/account/account.confirm-email-change";
@@ -45,18 +44,19 @@ import { userCreateRoute } from "./api-routes/user/user.create";
 import { userDeleteRoute } from "./api-routes/user/user.delete";
 import { userGetByIdRoute } from "./api-routes/user/user.get-by-id";
 import { authMiddleware } from "./utils/middlewares/auth";
+import { corsMiddleware } from "./utils/middlewares/cors";
 import { csrfMiddleware } from "./utils/middlewares/csrf";
 import { rateLimitingMiddleware } from "./utils/middlewares/rate-limiting";
 import { securityHeadersMiddleware } from "./utils/middlewares/security-headers";
 
 declare module "hono" {
-	interface ContextVariableMap {
-		user_id: string;
-		account_id: string;
-		tenant_id: string;
-		role_id: string;
-		session: Session;
-	}
+  interface ContextVariableMap {
+    user_id: string;
+    account_id: string;
+    tenant_id: string;
+    role_id: string;
+    session: Session;
+  }
 }
 
 const app = new Hono();
@@ -64,24 +64,18 @@ const app = new Hono();
 // Apply security headers first
 securityHeadersMiddleware(app);
 
-// Don't worry about CORS while running tests
-// Actually this shouldn't matter so we need to figure this out
-// TODO: Figure out how to handle CORS in tests
-if (Bun.env.NODE_ENV !== "test") {
-	app.use(
-		cors(
-			Bun.env.NODE_ENV !== "production"
-				? {
-						origin: "http://localhost:3000",
-						credentials: true,
-					}
-				: undefined,
-		),
-	);
-}
+// Centralized CORS handling
+corsMiddleware(app);
 rateLimitingMiddleware(app);
 authMiddleware(app);
 csrfMiddleware(app);
+
+// Healthcheck Route (no auth required)
+app.get("/api/healthcheck", (c) => {
+  return c.json({
+    status: "ok",
+  });
+});
 
 // Authentication Routes (no auth required)
 signInRoute(app);
@@ -141,6 +135,18 @@ accountGroupRemoveAccountsRoute(app);
 
 // Serve Route (no auth required)
 serveRoute(app);
+
+// Start the server only when this file is executed directly (not when imported) and the port is set
+// Docs about import.meta.main: https://bun.sh/docs/api/import-meta
+if (import.meta.main && Bun.env.INTERNAL_PORT) {
+  const port = Number(Bun.env.INTERNAL_PORT);
+  Bun.serve({
+    fetch: app.fetch,
+    port,
+    hostname: "::", // Bind to IPv6 for Railway private networking
+  });
+  console.log(`Server listening on [::]:${port}`);
+}
 
 export type App = typeof app;
 export default app;

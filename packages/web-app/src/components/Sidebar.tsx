@@ -16,6 +16,7 @@ import { Button } from "~/components/primitives/button";
 import { Select } from "~/components/primitives/select";
 import { client } from "~/utils/helpers/api-client";
 import { NewTenantForm } from "./forms/NewTenantForm";
+import { Dialog } from "./primitives/dialog";
 import { Label } from "./primitives/label";
 import { ThemeButton } from "./ThemeButton";
 
@@ -190,7 +191,6 @@ export function Sidebar({
 					</Select>
 				</div>
 			</div>
-
 			<nav className="flex-1 p-4 space-y-1">
 				<Link
 					to="/"
@@ -200,7 +200,6 @@ export function Sidebar({
 					<span>Dashboard</span>
 				</Link>
 			</nav>
-
 			<div className="p-4 border-t border-background-100 space-y-2.5">
 				<div className="flex items-center gap-2">
 					<Button
@@ -216,21 +215,40 @@ export function Sidebar({
 					<ThemeButton />
 				</div>
 
-				<Button
-					className="w-full justify-between gap-2"
-					onClick={() => mutate()}
-				>
-					<span>Sign out</span>
-					<LogOut className="w-4 h-4" />
-				</Button>
-			</div>
+				<Dialog>
+					<Dialog.Trigger asChild>
+						<Button className="w-full justify-between gap-2">
+							<span>Sign out</span>
+							<LogOut className="w-4 h-4" />
+						</Button>
+					</Dialog.Trigger>
+					<Dialog.Portal>
+						<Dialog.Overlay>
+							<Dialog.Content className="max-w-sm">
+								<Dialog.Title>Sign out</Dialog.Title>
+								<Dialog.Description>
+									Are you sure you want to sign out?
+								</Dialog.Description>
+								<div className="flex justify-end gap-2 mt-6">
+									<Dialog.Close asChild>
+										<Button variant="outline">Cancel</Button>
+									</Dialog.Close>
 
-			{/* New Tenant Form Dialog */}
+									<Button variant="default" onClick={() => mutate()}>
+										Sign out
+									</Button>
+								</div>
+							</Dialog.Content>
+						</Dialog.Overlay>
+					</Dialog.Portal>
+				</Dialog>
+			</div>
 			<NewTenantForm
 				isOpen={isNewTenantDialogOpen}
 				onClose={() => setIsNewTenantDialogOpen(false)}
 				accounts={accounts ?? []}
 			/>
+			;
 		</div>
 	);
 }

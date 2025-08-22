@@ -4,7 +4,7 @@
   "type": "module",
   "scripts": {
     "dev": "PORT=4000 bun run --hot src/index.ts",
-    "build": "bun build src/index.ts --outdir ./dist --target bun",
+    "build": "bun build src/index.ts --outdir ./dist --target bun --external @react-email/*",
     "start": "bun run dist/index.js",
     "db:generate": "bunx --bun drizzle-kit generate",
     "db:migrate": "bunx --bun drizzle-kit migrate",
@@ -13,9 +13,8 @@
     "db:studio": "npx drizzle-kit studio"
   },
   "dependencies": {
-    "@abyrd9/zod-form-data": "^1.1.2",
+    "@abyrd9/zod-form-data": "^1.2.5",
     "@hono/swagger-ui": "^0.5.2",
-    "@libsql/client": "^0.15.10",
     "@mjackson/file-storage": "^0.7.0",
     "@mjackson/form-data-parser": "^0.9.1",
     "@mjackson/lazy-file": "^3.4.0",
@@ -23,23 +22,23 @@
     "@oslojs/encoding": "^1.1.0",
     "@pacetrack/schema": "workspace:*",
     "@paralleldrive/cuid2": "^2.2.2",
-    "@tanstack/react-query-devtools": "^5.84.2",
+    "@tanstack/react-query-devtools": "^5.85.5",
     "dotenv": "^17.2.1",
     "drizzle-orm": "^0.44.4",
     "drizzle-zod": "^0.8.3",
-    "hono": "^4.9.0",
+    "hono": "^4.9.2",
     "nanoid": "^5.1.5",
     "nodemailer": "^7.0.5",
     "pg": "^8.16.3",
     "resend": "^6.0.1",
     "sharp": "^0.34.3",
     "stripe": "^18.4.0",
-    "zod": "^4.0.16"
+    "zod": "^4.0.17"
   },
   "devDependencies": {
-    "@tanstack/react-router-devtools": "^1.130.17",
-    "@types/bun": "^1.2.19",
-    "@types/nodemailer": "^6.4.17",
+    "@tanstack/react-router-devtools": "^1.131.27",
+    "@types/bun": "^1.2.20",
+    "@types/nodemailer": "^7.0.1",
     "@types/pg": "^8.15.5",
     "@types/uuid": "^10.0.0",
     "drizzle-kit": "^0.31.4"

@@ -69,9 +69,10 @@ const DialogContent = ({
 	return (
 		<RadixDialog.Content
 			ref={ref}
-			className={
-				"relative w-full max-w-md rounded-lg bg-background-offset dark:bg-background-100 p-6 shadow-modal shadow-black/10 data-[state=closed]:animate-dialog-out data-[state=open]:animate-dialog-in border border-background-100 dark:border-background-300"
-			}
+			className={cx(
+				"relative w-full max-w-md rounded-lg bg-background-offset dark:bg-background-100 p-6 shadow-modal shadow-black/10 data-[state=closed]:animate-dialog-out data-[state=open]:animate-dialog-in border border-background-100 dark:border-background-300",
+				className,
+			)}
 			{...props}
 		>
 			{showCloseIcon && (

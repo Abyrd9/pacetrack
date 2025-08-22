@@ -57,7 +57,6 @@ export function UpdateUserForm({ account }: { account: Account }) {
 				<Label htmlFor="display_name">Display name</Label>
 				<div className="flex items-center gap-2">
 					<Input
-						id="display_name"
 						name="display_name"
 						defaultValue={account?.display_name ?? ""}
 						placeholder="Your name"

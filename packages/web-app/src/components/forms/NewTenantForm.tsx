@@ -51,19 +51,9 @@ export function NewTenantForm({
 
 			return data;
 		},
-		onSuccess: (data) => {
-			if (data?.status === "ok") {
-				onClose();
-				qc.invalidateQueries({ queryKey: [TENANT_GET_ROUTE_PATH] });
-				qc.invalidateQueries({
-					queryKey: [ACCOUNT_GET_ROLES_ROUTE_PATH],
-				});
-				router.invalidate();
-			}
-		},
 	});
 
-	const { fields } = useZodForm({
+	const { fields, reset } = useZodForm({
 		schema: TenantCreateRequestSchema,
 		errors: data?.errors,
 	});
@@ -85,10 +75,27 @@ export function NewTenantForm({
 
 		// Add logo file if selected
 		if (logoFile) {
-			formData.append("image_url", logoFile);
+			formData.append("image", logoFile);
 		}
 
-		onSubmit(formData);
+		onSubmit(formData, {
+			onSuccess: (data) => {
+				if (data?.status === "ok") {
+					onClose();
+
+					qc.invalidateQueries({ queryKey: [TENANT_GET_ROUTE_PATH] });
+					qc.invalidateQueries({
+						queryKey: [ACCOUNT_GET_ROLES_ROUTE_PATH],
+					});
+
+					router.invalidate();
+
+					fields.name.onChange("");
+					fields.image.onChange(undefined);
+					setLogoFile(null);
+				}
+			},
+		});
 	};
 
 	return (

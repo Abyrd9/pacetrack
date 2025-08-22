@@ -5,7 +5,7 @@ import {
 	type SignUpRouteResponse,
 } from "@pacetrack/schema";
 import { useMutation } from "@tanstack/react-query";
-import { Link } from "@tanstack/react-router";
+import { Link, useRouter } from "@tanstack/react-router";
 import { ArrowRightIcon, EyeIcon, EyeOffIcon } from "lucide-react";
 import { useState } from "react";
 import { Button } from "~/components/primitives/button";
@@ -15,6 +15,8 @@ import { client } from "~/utils/helpers/api-client";
 import { setCSRFToken } from "~/utils/helpers/csrf-client";
 
 export const SignUpForm = () => {
+	const router = useRouter();
+
 	const {
 		data,
 		isPending,
@@ -43,6 +45,12 @@ export const SignUpForm = () => {
 			}
 
 			return data;
+		},
+		onSuccess: (data) => {
+			if (data.status === "ok") {
+				if (data.payload?.csrfToken) setCSRFToken(data.payload.csrfToken);
+				router.navigate({ to: "/", replace: true });
+			}
 		},
 	});
 
