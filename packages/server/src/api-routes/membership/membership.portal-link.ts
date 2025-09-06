@@ -1,9 +1,7 @@
 import {
   account_to_tenant_table,
   hasPermission,
-  MEMBERSHIP_PORTAL_LINK_ROUTE_PATH,
-  MembershipPortalLinkRequestSchema,
-  makeMembershipPortalLinkRouteResponse,
+  MEMBERSHIP_PORTAL_LINK_ROUTE,
   membership_table,
   role_table,
   tenant_table,
@@ -13,21 +11,20 @@ import type { App } from "src";
 import { db } from "src/db";
 import { getOriginUrl } from "src/utils/helpers/domain-url";
 import { getParsedBody } from "src/utils/helpers/get-parsed-body";
-import { stripe } from "src/utils/helpers/stripe";
+import { stripe } from "src/utils/helpers/stripe/stripe-client";
 
 export function membershipPortalLinkRoute(app: App) {
-  app.post(MEMBERSHIP_PORTAL_LINK_ROUTE_PATH, async (c) => {
+  app.post(MEMBERSHIP_PORTAL_LINK_ROUTE.path, async (c) => {
     try {
       const accountId = c.get("account_id");
 
       const parsed = await getParsedBody(
         c.req,
-        MembershipPortalLinkRequestSchema
+        MEMBERSHIP_PORTAL_LINK_ROUTE.request
       );
       if (!parsed.success) {
         return c.json(
-          makeMembershipPortalLinkRouteResponse({
-            key: MEMBERSHIP_PORTAL_LINK_ROUTE_PATH,
+          MEMBERSHIP_PORTAL_LINK_ROUTE.createRouteResponse({
             status: "error",
             errors: parsed.errors,
           }),
@@ -41,8 +38,7 @@ export function membershipPortalLinkRoute(app: App) {
       });
       if (!membership) {
         return c.json(
-          makeMembershipPortalLinkRouteResponse({
-            key: MEMBERSHIP_PORTAL_LINK_ROUTE_PATH,
+          MEMBERSHIP_PORTAL_LINK_ROUTE.createRouteResponse({
             status: "error",
             errors: { global: "Membership not found" },
           }),
@@ -74,8 +70,7 @@ export function membershipPortalLinkRoute(app: App) {
       );
       if (!hasManage) {
         return c.json(
-          makeMembershipPortalLinkRouteResponse({
-            key: MEMBERSHIP_PORTAL_LINK_ROUTE_PATH,
+          MEMBERSHIP_PORTAL_LINK_ROUTE.createRouteResponse({
             status: "error",
             errors: { global: "You are not authorized" },
           }),
@@ -85,8 +80,7 @@ export function membershipPortalLinkRoute(app: App) {
 
       if (!membership.customer_id) {
         return c.json(
-          makeMembershipPortalLinkRouteResponse({
-            key: MEMBERSHIP_PORTAL_LINK_ROUTE_PATH,
+          MEMBERSHIP_PORTAL_LINK_ROUTE.createRouteResponse({
             status: "error",
             errors: { global: "Membership has no Stripe customer" },
           }),
@@ -96,8 +90,7 @@ export function membershipPortalLinkRoute(app: App) {
 
       if (!stripe) {
         return c.json(
-          makeMembershipPortalLinkRouteResponse({
-            key: MEMBERSHIP_PORTAL_LINK_ROUTE_PATH,
+          MEMBERSHIP_PORTAL_LINK_ROUTE.createRouteResponse({
             status: "error",
             errors: { global: "Stripe is not enabled" },
           }),
@@ -111,8 +104,7 @@ export function membershipPortalLinkRoute(app: App) {
       });
 
       return c.json(
-        makeMembershipPortalLinkRouteResponse({
-          key: MEMBERSHIP_PORTAL_LINK_ROUTE_PATH,
+        MEMBERSHIP_PORTAL_LINK_ROUTE.createRouteResponse({
           status: "ok",
           payload: { url: portal.url },
         }),
@@ -121,8 +113,7 @@ export function membershipPortalLinkRoute(app: App) {
     } catch (error) {
       console.error(error);
       return c.json(
-        makeMembershipPortalLinkRouteResponse({
-          key: MEMBERSHIP_PORTAL_LINK_ROUTE_PATH,
+        MEMBERSHIP_PORTAL_LINK_ROUTE.createRouteResponse({
           status: "error",
           errors: { global: "Something went wrong" },
         }),

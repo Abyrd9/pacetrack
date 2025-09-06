@@ -1,8 +1,4 @@
-import {
-  ACCOUNT_GET_ROUTE_PATH,
-  type Account,
-  type AccountGetRouteResponse,
-} from "@pacetrack/schema";
+import { ACCOUNT_GET_ROUTE, type Account } from "@pacetrack/schema";
 import { queryOptions } from "@tanstack/react-query";
 import { createServerFn } from "@tanstack/react-start";
 import { getWebRequest } from "@tanstack/react-start/server";
@@ -11,8 +7,8 @@ import { client } from "../helpers/api-client";
 export const getAccountsServerFn = createServerFn({ method: "POST" }).handler(
   async () => {
     const request = await getWebRequest();
-    const resp = await client<AccountGetRouteResponse>(
-      ACCOUNT_GET_ROUTE_PATH,
+    const resp = await client(
+      "ACCOUNT_GET_ROUTE",
       {
         method: "POST",
         body: JSON.stringify({}),
@@ -33,7 +29,7 @@ export const getAccountsServerFn = createServerFn({ method: "POST" }).handler(
 
 export const getAccountsQueryOptions = (initialData?: Account[] | null) =>
   queryOptions({
-    queryKey: [ACCOUNT_GET_ROUTE_PATH],
+    queryKey: [ACCOUNT_GET_ROUTE.path],
     queryFn: () => getAccountsServerFn(),
     initialData: initialData,
   });

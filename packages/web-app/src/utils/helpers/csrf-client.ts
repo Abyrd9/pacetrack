@@ -6,14 +6,9 @@
  * For server-side usage (React Router actions), tokens are read from cookies.
  */
 
-const CSRF_TOKEN_KEY = "pacetrack-csrf-token";
+import { isBrowser } from "./is-browser";
 
-/**
- * Checks if we're running in a browser environment
- */
-function isBrowser(): boolean {
-	return typeof window !== "undefined" && typeof localStorage !== "undefined";
-}
+const CSRF_TOKEN_KEY = "pacetrack-csrf-token";
 
 /**
  * Stores a CSRF token in localStorage and as a document cookie (client-side only)
@@ -22,18 +17,18 @@ function isBrowser(): boolean {
  * @param csrfToken - The CSRF token to store
  */
 export function setCSRFToken(csrfToken: string): void {
-	if (isBrowser()) {
-		// Store in localStorage for client-side access
-		localStorage.setItem(CSRF_TOKEN_KEY, csrfToken);
+  if (isBrowser()) {
+    // Store in localStorage for client-side access
+    localStorage.setItem(CSRF_TOKEN_KEY, csrfToken);
 
-		// Also set as a document cookie for server-side actions
-		// Set with same path and domain as the session cookie
+    // Also set as a document cookie for server-side actions
+    // Set with same path and domain as the session cookie
 
-		// biome-ignore lint/suspicious/noDocumentCookie: This is fine.
-		document.cookie = `pacetrack-csrf-token=${encodeURIComponent(
-			csrfToken,
-		)}; path=/; SameSite=Strict`;
-	}
+    // biome-ignore lint/suspicious/noDocumentCookie: This is fine.
+    document.cookie = `pacetrack-csrf-token=${encodeURIComponent(
+      csrfToken
+    )}; path=/; SameSite=Strict`;
+  }
 }
 
 /**
@@ -43,33 +38,33 @@ export function setCSRFToken(csrfToken: string): void {
  * @returns The CSRF token or null if not found
  */
 export function getCSRFToken(request?: Request): string | null {
-	// Server-side: try to get from cookies
-	if (request) {
-		const cookies = request.headers.get("cookie");
-		if (cookies) {
-			const csrfMatch = cookies.match(/pacetrack-csrf-token=([^;]+)/);
-			if (csrfMatch) {
-				if (!csrfMatch[1]) return null;
-				return decodeURIComponent(csrfMatch[1]);
-			}
-		}
-	}
+  // Server-side: try to get from cookies
+  if (request) {
+    const cookies = request.headers.get("cookie");
+    if (cookies) {
+      const csrfMatch = cookies.match(/pacetrack-csrf-token=([^;]+)/);
+      if (csrfMatch) {
+        if (!csrfMatch[1]) return null;
+        return decodeURIComponent(csrfMatch[1]);
+      }
+    }
+  }
 
-	// Client-side: prioritize cookies over localStorage
-	if (isBrowser()) {
-		// First try to get from cookies (for server-side actions)
-		const cookies = document.cookie;
-		const csrfMatch = cookies.match(/pacetrack-csrf-token=([^;]+)/);
-		if (csrfMatch) {
-			if (!csrfMatch[1]) return null;
-			return decodeURIComponent(csrfMatch[1]);
-		}
+  // Client-side: prioritize cookies over localStorage
+  if (isBrowser()) {
+    // First try to get from cookies (for server-side actions)
+    const cookies = document.cookie;
+    const csrfMatch = cookies.match(/pacetrack-csrf-token=([^;]+)/);
+    if (csrfMatch) {
+      if (!csrfMatch[1]) return null;
+      return decodeURIComponent(csrfMatch[1]);
+    }
 
-		// Fall back to localStorage
-		return localStorage.getItem(CSRF_TOKEN_KEY);
-	}
+    // Fall back to localStorage
+    return localStorage.getItem(CSRF_TOKEN_KEY);
+  }
 
-	return null;
+  return null;
 }
 
 /**
@@ -77,14 +72,14 @@ export function getCSRFToken(request?: Request): string | null {
  * This should be called on logout
  */
 export function clearCSRFToken(): void {
-	if (isBrowser()) {
-		// Remove from localStorage
-		localStorage.removeItem(CSRF_TOKEN_KEY);
+  if (isBrowser()) {
+    // Remove from localStorage
+    localStorage.removeItem(CSRF_TOKEN_KEY);
 
-		// Remove the cookie by setting it with an expired date
-		// biome-ignore lint/suspicious/noDocumentCookie: This is fine.
-		document.cookie = `pacetrack-csrf-token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT`;
-	}
+    // Remove the cookie by setting it with an expired date
+    // biome-ignore lint/suspicious/noDocumentCookie: This is fine.
+    document.cookie = `pacetrack-csrf-token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT`;
+  }
 }
 
 /**
@@ -94,5 +89,5 @@ export function clearCSRFToken(): void {
  * @returns True if a CSRF token is stored
  */
 export function hasCSRFToken(request?: Request): boolean {
-	return getCSRFToken(request) !== null;
+  return getCSRFToken(request) !== null;
 }

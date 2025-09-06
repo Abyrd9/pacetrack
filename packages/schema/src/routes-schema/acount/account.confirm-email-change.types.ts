@@ -1,31 +1,42 @@
 import { z } from "zod/v4";
 import { ActionDataSchema, type RouteResponse } from "../../types/generics";
 
-export const CONFIRM_EMAIL_CHANGE_ROUTE_PATH =
-	"/api/account/confirm-email-change";
+const CONFIRM_EMAIL_CHANGE_ROUTE_PATH = "/api/account/confirm-email-change";
 
-export const ConfirmEmailChangeRequestSchema = z.object({
-	email: z.email(),
-	token: z.string().min(1),
+const ConfirmEmailChangeRequestSchema = z.object({
+  email: z.email(),
+  token: z.string().min(1),
 });
 
-export const ConfirmEmailChangeActionDataErrorSchema = ActionDataSchema(
-	ConfirmEmailChangeRequestSchema,
-	"error",
-	CONFIRM_EMAIL_CHANGE_ROUTE_PATH,
+const ConfirmEmailChangeActionDataErrorSchema = ActionDataSchema(
+  ConfirmEmailChangeRequestSchema,
+  "error",
+  CONFIRM_EMAIL_CHANGE_ROUTE_PATH
 );
 
-export const ConfirmEmailChangeActionDataSuccessSchema = ActionDataSchema(
-	ConfirmEmailChangeRequestSchema,
-	"ok",
-	CONFIRM_EMAIL_CHANGE_ROUTE_PATH,
+const ConfirmEmailChangeActionDataSuccessSchema = ActionDataSchema(
+  ConfirmEmailChangeRequestSchema,
+  "ok",
+  CONFIRM_EMAIL_CHANGE_ROUTE_PATH
 );
 
 export type ConfirmEmailChangeRouteResponse = RouteResponse<
-	typeof ConfirmEmailChangeActionDataSuccessSchema,
-	typeof ConfirmEmailChangeActionDataErrorSchema
+  typeof ConfirmEmailChangeActionDataSuccessSchema,
+  typeof ConfirmEmailChangeActionDataErrorSchema
 >;
 
-export const makeConfirmEmailChangeRouteResponse = (
-	args: ConfirmEmailChangeRouteResponse,
-) => args;
+export const ACCOUNT_CONFIRM_EMAIL_CHANGE_ROUTE = {
+  path: CONFIRM_EMAIL_CHANGE_ROUTE_PATH,
+  method: "POST",
+  request: ConfirmEmailChangeRequestSchema,
+  response: z.union([
+    ConfirmEmailChangeActionDataSuccessSchema,
+    ConfirmEmailChangeActionDataErrorSchema,
+  ]),
+  createRouteResponse: (args: Omit<ConfirmEmailChangeRouteResponse, "key">) => {
+    return {
+      ...args,
+      key: ACCOUNT_CONFIRM_EMAIL_CHANGE_ROUTE.path,
+    };
+  },
+} as const;

@@ -1,6 +1,6 @@
 import type { Account, User } from "@pacetrack/schema";
 import { createId } from "@paralleldrive/cuid2";
-import { stripe } from "src/utils/helpers/stripe";
+import { stripe } from "src/utils/helpers/stripe/stripe-client";
 
 export const createNewCustomer = async (user: User, account: Account) => {
   // If stripe is undefined, it means we might not want it active in the current environment

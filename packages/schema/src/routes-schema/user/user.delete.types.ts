@@ -1,30 +1,43 @@
 import { z } from "zod/v4";
 import { ActionDataSchema, type RouteResponse } from "../../types/generics";
 
-export const USER_DELETE_ROUTE_PATH = "/api/user/delete";
+const USER_DELETE_ROUTE_PATH = "/api/user/delete";
 
-export const UserDeleteRequestSchema = z.object({
-	userId: z.string(),
+const UserDeleteRequestSchema = z.object({
+  userId: z.string(),
 });
 
-export const UserDeleteActionDataErrorSchema = ActionDataSchema(
-	UserDeleteRequestSchema,
-	"error",
-	USER_DELETE_ROUTE_PATH,
+const UserDeleteActionDataErrorSchema = ActionDataSchema(
+  UserDeleteRequestSchema,
+  "error",
+  USER_DELETE_ROUTE_PATH
 );
 
-export const UserDeleteActionDataSuccessSchema = ActionDataSchema(
-	z.object({
-		message: z.string(),
-	}),
-	"ok",
-	USER_DELETE_ROUTE_PATH,
+const UserDeleteActionDataSuccessSchema = ActionDataSchema(
+  z.object({
+    message: z.string(),
+  }),
+  "ok",
+  USER_DELETE_ROUTE_PATH
 );
 
 export type UserDeleteRouteResponse = RouteResponse<
-	typeof UserDeleteActionDataSuccessSchema,
-	typeof UserDeleteActionDataErrorSchema
+  typeof UserDeleteActionDataSuccessSchema,
+  typeof UserDeleteActionDataErrorSchema
 >;
 
-export const makeUserDeleteRouteResponse = (args: UserDeleteRouteResponse) =>
-	args;
+export const USER_DELETE_ROUTE = {
+  path: USER_DELETE_ROUTE_PATH,
+  method: "POST",
+  request: UserDeleteRequestSchema,
+  response: z.union([
+    UserDeleteActionDataSuccessSchema,
+    UserDeleteActionDataErrorSchema,
+  ]),
+  createRouteResponse: (args: Omit<UserDeleteRouteResponse, "key">) => {
+    return {
+      ...args,
+      key: USER_DELETE_ROUTE.path,
+    };
+  },
+} as const;

@@ -1,29 +1,43 @@
 import { z } from "zod/v4";
 import { ActionDataSchema, type RouteResponse } from "../../types/generics";
 
-export const MEMBERSHIP_PORTAL_LINK_ROUTE_PATH = "/api/membership/portal-link";
+const MEMBERSHIP_PORTAL_LINK_ROUTE_PATH = "/api/membership/portal-link";
 
-export const MembershipPortalLinkRequestSchema = z.object({
-	membershipId: z.string(),
+const MembershipPortalLinkRequestSchema = z.object({
+  membershipId: z.string(),
 });
 
-export const MembershipPortalLinkActionDataErrorSchema = ActionDataSchema(
-	MembershipPortalLinkRequestSchema,
-	"error",
-	MEMBERSHIP_PORTAL_LINK_ROUTE_PATH,
+const MembershipPortalLinkActionDataErrorSchema = ActionDataSchema(
+  MembershipPortalLinkRequestSchema,
+  "error",
+  MEMBERSHIP_PORTAL_LINK_ROUTE_PATH
 );
 
-export const MembershipPortalLinkActionDataSuccessSchema = ActionDataSchema(
-	z.object({ url: z.string().url() }),
-	"ok",
-	MEMBERSHIP_PORTAL_LINK_ROUTE_PATH,
+const MembershipPortalLinkActionDataSuccessSchema = ActionDataSchema(
+  z.object({ url: z.string().url() }),
+  "ok",
+  MEMBERSHIP_PORTAL_LINK_ROUTE_PATH
 );
 
 export type MembershipPortalLinkRouteResponse = RouteResponse<
-	typeof MembershipPortalLinkActionDataSuccessSchema,
-	typeof MembershipPortalLinkActionDataErrorSchema
+  typeof MembershipPortalLinkActionDataSuccessSchema,
+  typeof MembershipPortalLinkActionDataErrorSchema
 >;
 
-export const makeMembershipPortalLinkRouteResponse = (
-	args: MembershipPortalLinkRouteResponse,
-) => args;
+export const MEMBERSHIP_PORTAL_LINK_ROUTE = {
+  path: MEMBERSHIP_PORTAL_LINK_ROUTE_PATH,
+  method: "POST",
+  request: MembershipPortalLinkRequestSchema,
+  response: z.union([
+    MembershipPortalLinkActionDataSuccessSchema,
+    MembershipPortalLinkActionDataErrorSchema,
+  ]),
+  createRouteResponse: (
+    args: Omit<MembershipPortalLinkRouteResponse, "key">
+  ) => {
+    return {
+      ...args,
+      key: MEMBERSHIP_PORTAL_LINK_ROUTE.path,
+    };
+  },
+} as const;

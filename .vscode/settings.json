@@ -1,18 +1,21 @@
 {
-  "typescript.preferences.includePackageJsonAutoImports": "on",
-  "typescript.suggest.autoImports": true,
-  "typescript.preferences.useAliasesForRenames": false,
-  "typescript.enablePromptUseWorkspaceTsdk": true,
-  "typescript.tsdk": "./node_modules/typescript/lib",
+	"typescript.preferences.includePackageJsonAutoImports": "on",
+	"typescript.suggest.autoImports": true,
+	"typescript.preferences.useAliasesForRenames": false,
+	"typescript.enablePromptUseWorkspaceTsdk": true,
+	"typescript.tsdk": "./node_modules/typescript/lib",
 
-  // Format on save
-  "editor.formatOnSave": true,
-  "editor.defaultFormatter": "biomejs.biome",
-  "editor.codeActionsOnSave": {
-    "source.fixAll.biome": "explicit",
-    "source.fixAll": "explicit"
-  },
+	// Format on save
+	"editor.formatOnSave": true,
+	"editor.defaultFormatter": "biomejs.biome",
+	"editor.codeActionsOnSave": {
+		"source.fixAll.biome": "explicit",
+		"source.fixAll": "explicit"
+	},
 
-  "editor.tabSize": 2,
-  "editor.insertSpaces": true
+	"editor.tabSize": 2,
+	"editor.insertSpaces": true,
+	"[jsonc]": {
+		"editor.defaultFormatter": "esbenp.prettier-vscode"
+	}
 }

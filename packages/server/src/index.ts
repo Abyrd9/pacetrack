@@ -43,11 +43,12 @@ import { tenantUpdateRoute } from "./api-routes/tenant/tenant.update";
 import { userCreateRoute } from "./api-routes/user/user.create";
 import { userDeleteRoute } from "./api-routes/user/user.delete";
 import { userGetByIdRoute } from "./api-routes/user/user.get-by-id";
-import { authMiddleware } from "./utils/middlewares/auth";
-import { corsMiddleware } from "./utils/middlewares/cors";
-import { csrfMiddleware } from "./utils/middlewares/csrf";
-import { rateLimitingMiddleware } from "./utils/middlewares/rate-limiting";
-import { securityHeadersMiddleware } from "./utils/middlewares/security-headers";
+import { authMiddleware } from "./utils/middlewares/auth-middleware";
+import { corsMiddleware } from "./utils/middlewares/cors-middleware";
+import { csrfMiddleware } from "./utils/middlewares/csrf-middleware";
+import { rateLimitingMiddleware } from "./utils/middlewares/rate-limiting-middleware";
+import { securityHeadersMiddleware } from "./utils/middlewares/security-headers-middleware";
+import { serverTimingMiddleware } from "./utils/middlewares/server-timing-middleware";
 
 declare module "hono" {
   interface ContextVariableMap {
@@ -61,10 +62,8 @@ declare module "hono" {
 
 const app = new Hono();
 
-// Apply security headers first
-securityHeadersMiddleware(app);
-
-// Centralized CORS handling
+securityHeadersMiddleware(app); // Apply security headers first
+serverTimingMiddleware(app); // (must be early to capture full request lifecycle)
 corsMiddleware(app);
 rateLimitingMiddleware(app);
 authMiddleware(app);

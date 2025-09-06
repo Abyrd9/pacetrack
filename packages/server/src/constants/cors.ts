@@ -2,32 +2,38 @@
 // Add allowed origins here for cross-origin requests.
 // Leave the array empty to effectively allow same-origin only (requests with no Origin header).
 
-// If the environment variable CORS_ORIGINS is provided, it takes precedence.
+// If the environment variable CORS_ORIGIN_URLS is provided, it takes precedence.
 // It should be a comma-separated list, e.g.:
-// CORS_ORIGINS="http://localhost:3000,https://app.example.com"
+// CORS_ORIGIN_URLS="http://localhost:3000,https://app.example.com"
 function normalizeOrigin(origin: string): string {
   const trimmed = origin.trim();
   // Lowercase and strip single trailing slash for comparison
   return trimmed.replace(/\/$/, "").toLowerCase();
 }
 
-const ENV_ALLOWED_ORIGINS = (Bun.env.CORS_ORIGINS || "")
+const ENV_ALLOWED_ORIGINS = (Bun.env.CORS_ORIGIN_URLS || "")
   .split(",")
   .map((s) => s.trim())
   .filter(Boolean)
   .map(normalizeOrigin);
 
-// Code-based defaults (used only when CORS_ORIGINS is not set)
-const STATIC_ALLOWED_CORS_ORIGINS: string[] = [
+// Code-based defaults (used only when CORS_ORIGIN_URLS is not set)
+const STATIC_ALLOWED_CORS_ORIGIN_URLS: string[] = [
   // Example entries:
   // "http://localhost:3000",
   // "https://app.example.com",
 ].map(normalizeOrigin);
 
-export const ALLOWED_CORS_ORIGINS: string[] =
+export const ALLOWED_CORS_ORIGIN_URLS: string[] =
   ENV_ALLOWED_ORIGINS.length > 0
     ? ENV_ALLOWED_ORIGINS
-    : STATIC_ALLOWED_CORS_ORIGINS;
+    : STATIC_ALLOWED_CORS_ORIGIN_URLS;
+
+console.log(
+  "ALLOWED_CORS_ORIGIN_URLS",
+  Bun.env.CORS_ORIGIN_URLS,
+  ALLOWED_CORS_ORIGIN_URLS
+);
 
 // Whether to allow credentials (cookies, Authorization headers) to be sent
 export const CORS_ALLOW_CREDENTIALS = true;

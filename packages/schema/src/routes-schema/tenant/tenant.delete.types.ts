@@ -1,29 +1,41 @@
 import { z } from "zod/v4";
 import { ActionDataSchema, type RouteResponse } from "../../types/generics";
 
-export const TENANT_DELETE_ROUTE_PATH = "/api/tenant/delete";
+const TENANT_DELETE_ROUTE_PATH = "/api/tenant/delete";
 
-export const TenantDeleteRequestSchema = z.object({
-	tenantId: z.string(),
+const TenantDeleteRequestSchema = z.object({
+  tenantId: z.string(),
 });
 
-export const TenantDeleteActionDataErrorSchema = ActionDataSchema(
-	TenantDeleteRequestSchema,
-	"error",
-	TENANT_DELETE_ROUTE_PATH,
+const TenantDeleteActionDataErrorSchema = ActionDataSchema(
+  TenantDeleteRequestSchema,
+  "error",
+  TENANT_DELETE_ROUTE_PATH
 );
 
-export const TenantDeleteActionDataSuccessSchema = ActionDataSchema(
-	z.object({ message: z.string() }),
-	"ok",
-	TENANT_DELETE_ROUTE_PATH,
+const TenantDeleteActionDataSuccessSchema = ActionDataSchema(
+  z.object({ message: z.string() }),
+  "ok",
+  TENANT_DELETE_ROUTE_PATH
 );
 
 export type TenantDeleteRouteResponse = RouteResponse<
-	typeof TenantDeleteActionDataSuccessSchema,
-	typeof TenantDeleteActionDataErrorSchema
+  typeof TenantDeleteActionDataSuccessSchema,
+  typeof TenantDeleteActionDataErrorSchema
 >;
 
-export const makeTenantDeleteRouteResponse = (
-	args: TenantDeleteRouteResponse,
-) => args;
+export const TENANT_DELETE_ROUTE = {
+  path: TENANT_DELETE_ROUTE_PATH,
+  method: "POST",
+  request: TenantDeleteRequestSchema,
+  response: z.union([
+    TenantDeleteActionDataSuccessSchema,
+    TenantDeleteActionDataErrorSchema,
+  ]),
+  createRouteResponse: (args: Omit<TenantDeleteRouteResponse, "key">) => {
+    return {
+      ...args,
+      key: TENANT_DELETE_ROUTE.path,
+    };
+  },
+} as const;

@@ -3,10 +3,10 @@
 
 import { TooltipProvider } from "@radix-ui/react-tooltip";
 import {
-	createRootRouteWithContext,
-	HeadContent,
-	Outlet,
-	Scripts,
+  createRootRouteWithContext,
+  HeadContent,
+  Outlet,
+  Scripts,
 } from "@tanstack/react-router";
 import { TanStackRouterDevtools } from "@tanstack/react-router-devtools";
 import type { ReactNode } from "react";
@@ -23,93 +23,95 @@ import { hint_checkTimeZone } from "../utils/services/client-hints/time-zone";
 import { ThemeProvider } from "../utils/services/client-theme/ThemeProvider";
 
 export const Route = createRootRouteWithContext<{
-	BASE_API_URL: string;
-	queryClient: QueryClient;
+  BASE_API_URL: string;
+  queryClient: QueryClient;
 }>()({
-	head: () => ({
-		meta: [
-			{
-				charSet: "utf-8",
-			},
-			{
-				name: "viewport",
-				content: "width=device-width, initial-scale=1",
-			},
-			{
-				title: "PaceTrack",
-			},
-		],
-		links: [{ rel: "stylesheet", href: css }],
-	}),
-	errorComponent: (props) => {
-		return (
-			<RootDocument theme="system">
-				<DefaultCatchBoundary {...props} />
-			</RootDocument>
-		);
-	},
-	beforeLoad: async () => {
-		const { theme } = await getClientThemeServerFn();
+  head: () => ({
+    meta: [
+      {
+        charSet: "utf-8",
+      },
+      {
+        name: "viewport",
+        content: "width=device-width, initial-scale=1",
+      },
+      {
+        title: "PaceTrack",
+      },
+    ],
+    links: [{ rel: "stylesheet", href: css }],
+  }),
+  errorComponent: (props) => {
+    return (
+      <RootDocument theme="system">
+        <DefaultCatchBoundary {...props} />
+      </RootDocument>
+    );
+  },
+  beforeLoad: async () => {
+    const { theme } = await getClientThemeServerFn();
 
-		return {
-			theme,
-		};
-	},
-	loader: ({ context }) => {
-		return {
-			theme: context.theme,
-		};
-	},
-	notFoundComponent: () => <div>Not Found</div>,
-	component: RootComponent,
+    return {
+      theme,
+    };
+  },
+  staleTime: 60_000,
+  preloadStaleTime: 60_000,
+  loader: ({ context }) => {
+    return {
+      theme: context.theme,
+    };
+  },
+  notFoundComponent: () => <div>Not Found</div>,
+  component: RootComponent,
 });
 
 function RootComponent() {
-	const data = Route.useLoaderData();
+  const data = Route.useLoaderData();
 
-	return (
-		<ThemeProvider theme={data.theme}>
-			{({ theme }) => (
-				<RootDocument theme={theme}>
-					<TooltipProvider>
-						<ToasterProvider>
-							<Outlet />
-						</ToasterProvider>
-					</TooltipProvider>
-				</RootDocument>
-			)}
-		</ThemeProvider>
-	);
+  return (
+    <ThemeProvider theme={data.theme}>
+      {({ theme }) => (
+        <RootDocument theme={theme}>
+          <TooltipProvider>
+            <ToasterProvider>
+              <Outlet />
+            </ToasterProvider>
+          </TooltipProvider>
+        </RootDocument>
+      )}
+    </ThemeProvider>
+  );
 }
 
 function RootDocument({
-	children,
-	theme,
+  children,
+  theme,
 }: Readonly<{
-	children: ReactNode;
-	theme: string;
+  children: ReactNode;
+  theme: string;
 }>) {
-	return (
-		<html className={theme} lang="en">
-			<head>
-				<HeadContent />
-				<script
-					// biome-ignore lint/security/noDangerouslySetInnerHtml: We need this to run the hint check so we can set cookies for these values without a screen flash
-					dangerouslySetInnerHTML={{
-						__html: `
+  return (
+    <html className={theme} lang="en">
+      <head>
+        <HeadContent />
+        <script
+          // biome-ignore lint/security/noDangerouslySetInnerHtml: We need this to run the hint check so we can set cookies for these values without a screen flash
+          dangerouslySetInnerHTML={{
+            __html: `
               (${hint_checkPrefersColorScheme.toString()})();
               (${hint_checkPrefersMotion.toString()})();
               (${hint_checkTimeZone.toString()})();
             `,
-					}}
-				/>
-			</head>
-			<body>
-				{children}
-				<TanStackRouterDevtools position="bottom-right" />
-				<ReactQueryDevtools buttonPosition="bottom-left" />
-				<Scripts />
-			</body>
-		</html>
-	);
+          }}
+        />
+      </head>
+      <body>
+        {children}
+        <TanStackRouterDevtools position="bottom-right" />
+        <ReactQueryDevtools buttonPosition="bottom-left" />
+        <Scripts />
+      </body>
+    </html>
+  );
 }

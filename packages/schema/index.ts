@@ -1,5 +1,6 @@
-// DB Exports
+/** biome-ignore-all assist/source/organizeImports: We don't want this for this file */
 
+// DB Exports
 export * from "./src/db-schema/account";
 export * from "./src/db-schema/account-group";
 export * from "./src/db-schema/account-group-relations";
@@ -58,6 +59,8 @@ export * from "./src/routes-schema/tenant/tenant.update.types";
 export * from "./src/routes-schema/user/user.create.types";
 export * from "./src/routes-schema/user/user.delete.types";
 export * from "./src/routes-schema/user/user.get-by-id.types";
+// Route Definitions Exports
+export * from "./src/routes-schema/index";
 // Types Exports
 export * from "./src/types/deep-partial";
 export * from "./src/types/generics";

@@ -1,6 +1,6 @@
 import type { Context } from "hono";
 import { deleteCookie, setCookie } from "hono/cookie";
-import { getCookieDomain } from "./get-cookie-domain";
+import { getCookieDomain } from "../get-cookie-domain";
 
 export async function setCSRFTokenCookie(
   c: Context,

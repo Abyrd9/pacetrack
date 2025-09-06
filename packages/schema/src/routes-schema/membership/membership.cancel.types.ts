@@ -1,29 +1,41 @@
 import { z } from "zod/v4";
 import { ActionDataSchema, type RouteResponse } from "../../types/generics";
 
-export const MEMBERSHIP_CANCEL_ROUTE_PATH = "/api/membership/cancel";
+const MEMBERSHIP_CANCEL_ROUTE_PATH = "/api/membership/cancel";
 
-export const MembershipCancelRequestSchema = z.object({
-	membershipId: z.string(),
+const MembershipCancelRequestSchema = z.object({
+  membershipId: z.string(),
 });
 
-export const MembershipCancelActionDataErrorSchema = ActionDataSchema(
-	MembershipCancelRequestSchema,
-	"error",
-	MEMBERSHIP_CANCEL_ROUTE_PATH,
+const MembershipCancelActionDataErrorSchema = ActionDataSchema(
+  MembershipCancelRequestSchema,
+  "error",
+  MEMBERSHIP_CANCEL_ROUTE_PATH
 );
 
-export const MembershipCancelActionDataSuccessSchema = ActionDataSchema(
-	z.object({ message: z.string() }),
-	"ok",
-	MEMBERSHIP_CANCEL_ROUTE_PATH,
+const MembershipCancelActionDataSuccessSchema = ActionDataSchema(
+  z.object({ message: z.string() }),
+  "ok",
+  MEMBERSHIP_CANCEL_ROUTE_PATH
 );
 
 export type MembershipCancelRouteResponse = RouteResponse<
-	typeof MembershipCancelActionDataSuccessSchema,
-	typeof MembershipCancelActionDataErrorSchema
+  typeof MembershipCancelActionDataSuccessSchema,
+  typeof MembershipCancelActionDataErrorSchema
 >;
 
-export const makeMembershipCancelRouteResponse = (
-	args: MembershipCancelRouteResponse,
-) => args;
+export const MEMBERSHIP_CANCEL_ROUTE = {
+  path: MEMBERSHIP_CANCEL_ROUTE_PATH,
+  method: "POST",
+  request: MembershipCancelRequestSchema,
+  response: z.union([
+    MembershipCancelActionDataSuccessSchema,
+    MembershipCancelActionDataErrorSchema,
+  ]),
+  createRouteResponse: (args: Omit<MembershipCancelRouteResponse, "key">) => {
+    return {
+      ...args,
+      key: MEMBERSHIP_CANCEL_ROUTE.path,
+    };
+  },
+} as const;

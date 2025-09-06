@@ -1,9 +1,7 @@
 import {
   account_to_tenant_table,
   hasPermission,
-  MEMBERSHIP_CANCEL_ROUTE_PATH,
-  MembershipCancelRequestSchema,
-  makeMembershipCancelRouteResponse,
+  MEMBERSHIP_CANCEL_ROUTE,
   membership_table,
   role_table,
   tenant_table,
@@ -12,18 +10,20 @@ import { and, eq, isNull } from "drizzle-orm";
 import type { App } from "src";
 import { db } from "src/db";
 import { getParsedBody } from "src/utils/helpers/get-parsed-body";
-import { stripe } from "src/utils/helpers/stripe";
+import { stripe } from "src/utils/helpers/stripe/stripe-client";
 
 export function membershipCancelRoute(app: App) {
-  app.post(MEMBERSHIP_CANCEL_ROUTE_PATH, async (c) => {
+  app.post(MEMBERSHIP_CANCEL_ROUTE.path, async (c) => {
     try {
       const accountId = c.get("account_id");
 
-      const parsed = await getParsedBody(c.req, MembershipCancelRequestSchema);
+      const parsed = await getParsedBody(
+        c.req,
+        MEMBERSHIP_CANCEL_ROUTE.request
+      );
       if (!parsed.success) {
         return c.json(
-          makeMembershipCancelRouteResponse({
-            key: MEMBERSHIP_CANCEL_ROUTE_PATH,
+          MEMBERSHIP_CANCEL_ROUTE.createRouteResponse({
             status: "error",
             errors: parsed.errors,
           }),
@@ -37,8 +37,7 @@ export function membershipCancelRoute(app: App) {
       });
       if (!membership) {
         return c.json(
-          makeMembershipCancelRouteResponse({
-            key: MEMBERSHIP_CANCEL_ROUTE_PATH,
+          MEMBERSHIP_CANCEL_ROUTE.createRouteResponse({
             status: "error",
             errors: { global: "Membership not found" },
           }),
@@ -70,8 +69,7 @@ export function membershipCancelRoute(app: App) {
       );
       if (!hasManage) {
         return c.json(
-          makeMembershipCancelRouteResponse({
-            key: MEMBERSHIP_CANCEL_ROUTE_PATH,
+          MEMBERSHIP_CANCEL_ROUTE.createRouteResponse({
             status: "error",
             errors: { global: "You are not authorized" },
           }),
@@ -81,8 +79,7 @@ export function membershipCancelRoute(app: App) {
 
       if (!membership.subscription_id) {
         return c.json(
-          makeMembershipCancelRouteResponse({
-            key: MEMBERSHIP_CANCEL_ROUTE_PATH,
+          MEMBERSHIP_CANCEL_ROUTE.createRouteResponse({
             status: "error",
             errors: { global: "No active subscription" },
           }),
@@ -101,8 +98,7 @@ export function membershipCancelRoute(app: App) {
         .where(eq(membership_table.id, membershipId));
 
       return c.json(
-        makeMembershipCancelRouteResponse({
-          key: MEMBERSHIP_CANCEL_ROUTE_PATH,
+        MEMBERSHIP_CANCEL_ROUTE.createRouteResponse({
           status: "ok",
           payload: { message: "Subscription canceled" },
         }),
@@ -111,8 +107,7 @@ export function membershipCancelRoute(app: App) {
     } catch (error) {
       console.error(error);
       return c.json(
-        makeMembershipCancelRouteResponse({
-          key: MEMBERSHIP_CANCEL_ROUTE_PATH,
+        MEMBERSHIP_CANCEL_ROUTE.createRouteResponse({
           status: "error",
           errors: { global: "Something went wrong" },
         }),

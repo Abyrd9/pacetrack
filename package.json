@@ -16,6 +16,12 @@
   "harbor": {
     "domain": "localhost",
     "useSudo": false,
+    "before": [
+      {
+        "path": "./packages/schema",
+        "command": "bun run scripts/generate-route-definitions.ts"
+      }
+    ],
     "services": [
       {
         "name": "web-app",

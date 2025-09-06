@@ -2,29 +2,41 @@ import { z } from "zod/v4";
 import { MembershipSchema } from "../../db-schema/membership";
 import { ActionDataSchema, type RouteResponse } from "../../types/generics";
 
-export const MEMBERSHIP_CREATE_ROUTE_PATH = "/api/membership/create";
+const MEMBERSHIP_CREATE_ROUTE_PATH = "/api/membership/create";
 
-export const MembershipCreateRequestSchema = z.object({
-	tenantId: z.string(),
+const MembershipCreateRequestSchema = z.object({
+  tenantId: z.string(),
 });
 
-export const MembershipCreateActionDataErrorSchema = ActionDataSchema(
-	MembershipCreateRequestSchema,
-	"error",
-	MEMBERSHIP_CREATE_ROUTE_PATH,
+const MembershipCreateActionDataErrorSchema = ActionDataSchema(
+  MembershipCreateRequestSchema,
+  "error",
+  MEMBERSHIP_CREATE_ROUTE_PATH
 );
 
-export const MembershipCreateActionDataSuccessSchema = ActionDataSchema(
-	MembershipSchema,
-	"ok",
-	MEMBERSHIP_CREATE_ROUTE_PATH,
+const MembershipCreateActionDataSuccessSchema = ActionDataSchema(
+  MembershipSchema,
+  "ok",
+  MEMBERSHIP_CREATE_ROUTE_PATH
 );
 
 export type MembershipCreateRouteResponse = RouteResponse<
-	typeof MembershipCreateActionDataSuccessSchema,
-	typeof MembershipCreateActionDataErrorSchema
+  typeof MembershipCreateActionDataSuccessSchema,
+  typeof MembershipCreateActionDataErrorSchema
 >;
 
-export const makeMembershipCreateRouteResponse = (
-	args: MembershipCreateRouteResponse,
-) => args;
+export const MEMBERSHIP_CREATE_ROUTE = {
+  path: MEMBERSHIP_CREATE_ROUTE_PATH,
+  method: "POST",
+  request: MembershipCreateRequestSchema,
+  response: z.union([
+    MembershipCreateActionDataSuccessSchema,
+    MembershipCreateActionDataErrorSchema,
+  ]),
+  createRouteResponse: (args: Omit<MembershipCreateRouteResponse, "key">) => {
+    return {
+      ...args,
+      key: MEMBERSHIP_CREATE_ROUTE.path,
+    };
+  },
+} as const;

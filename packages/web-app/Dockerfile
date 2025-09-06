@@ -8,8 +8,8 @@ COPY . .
 RUN bun install
 
 # Set environment variables (from railway)
-ARG VITE_API_PUBLIC_URL
-RUN echo $VITE_API_PUBLIC_URL
+ARG VITE_API_URL
+RUN echo $VITE_API_URL
 
 # Build the server application
 WORKDIR /app/packages/web-app

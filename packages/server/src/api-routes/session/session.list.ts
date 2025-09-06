@@ -1,23 +1,19 @@
-import {
-	makeSessionListRouteResponse,
-	SESSION_LIST_ROUTE_PATH,
-} from "@pacetrack/schema";
+import { SESSION_LIST_ROUTE } from "@pacetrack/schema";
 import type { App } from "src";
-import { sessions } from "src/utils/helpers/auth-session";
+import { getSessionClient } from "src/utils/helpers/auth/auth-session";
 
 export function sessionListRoute(app: App) {
-	app.get(SESSION_LIST_ROUTE_PATH, async (c) => {
-		const userId = c.get("user_id");
+  app.get(SESSION_LIST_ROUTE.path, async (c) => {
+    const userId = c.get("user_id");
 
-		const response = await sessions.listUserSessions(userId);
+    const response = await getSessionClient().listUserSessions({ userId });
 
-		return c.json(
-			makeSessionListRouteResponse({
-				key: SESSION_LIST_ROUTE_PATH,
-				status: "ok",
-				payload: { sessions: response },
-			}),
-			200,
-		);
-	});
+    return c.json(
+      SESSION_LIST_ROUTE.createRouteResponse({
+        status: "ok",
+        payload: { sessions: response },
+      }),
+      200
+    );
+  });
 }
