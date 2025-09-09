@@ -27,7 +27,7 @@ export type AccountGroupGetByIdRouteResponse = RouteResponse<
 
 export const ACCOUNT_GROUP_GET_BY_ID_ROUTE = {
   path: ACCOUNT_GROUP_GET_BY_ID_ROUTE_PATH,
-  method: "GET",
+  method: "POST",
   request: AccountGroupGetByIdRequestSchema,
   response: z.union([
     AccountGroupGetByIdActionDataSuccessSchema,

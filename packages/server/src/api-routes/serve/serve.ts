@@ -101,8 +101,8 @@ export function serveRoute(app: App) {
         const contentType = getContentType(filename);
         c.header("Content-Type", contentType);
 
-        // Set cache headers for avatars (1 day cache)
-        c.header("Cache-Control", "public, max-age=86400");
+        // Set cache headers for avatars (1 week cache)
+        c.header("Cache-Control", "public, max-age=604800");
         c.header("ETag", `"${filename}"`);
 
         return c.body(buffer);

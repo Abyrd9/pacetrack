@@ -48,18 +48,11 @@ export const Route = createRootRouteWithContext<{
       </RootDocument>
     );
   },
-  beforeLoad: async () => {
+  staleTime: 60 * 60 * 1000, // 1 hour
+  loader: async () => {
     const { theme } = await getClientThemeServerFn();
-
     return {
       theme,
-    };
-  },
-  staleTime: 60_000,
-  preloadStaleTime: 60_000,
-  loader: ({ context }) => {
-    return {
-      theme: context.theme,
     };
   },
   notFoundComponent: () => <div>Not Found</div>,

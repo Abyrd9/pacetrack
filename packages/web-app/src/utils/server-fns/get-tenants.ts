@@ -7,13 +7,7 @@ import { client } from "../helpers/api-client";
 export const getTenantsServerFn = createServerFn({ method: "POST" }).handler(
   async () => {
     const request = await getWebRequest();
-    const resp = await client(
-      "TENANT_GET_ROUTE",
-      {
-        method: "GET",
-      },
-      request
-    );
+    const resp = await client("TENANT_GET_ROUTE", {}, request);
 
     if (resp.data.status === "error") {
       throw new Error("Failed to get tenants");

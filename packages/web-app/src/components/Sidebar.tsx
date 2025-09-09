@@ -49,9 +49,7 @@ export function Sidebar({
 
   const { mutate } = useMutation({
     mutationFn: async () => {
-      const resp = await client("SIGN_OUT_ROUTE", {
-        method: "POST",
-      });
+      const resp = await client("SIGN_OUT_ROUTE", {});
 
       return resp;
     },
@@ -68,7 +66,6 @@ export function Sidebar({
   const { mutate: switchTenant } = useMutation({
     mutationFn: async (form: FormData) => {
       const resp = await client("SESSION_SWITCH_TENANT_ROUTE", {
-        method: "POST",
         body: form,
       });
 

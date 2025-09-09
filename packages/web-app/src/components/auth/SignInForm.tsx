@@ -32,7 +32,6 @@ export const SignInForm = () => {
 
       const form = new FormData(element);
       const { data } = await client("SIGN_IN_ROUTE", {
-        method: "POST",
         body: form,
       });
 

@@ -26,9 +26,8 @@ const serverFn = createServerFn({
   }
 
   const { data } = await client("ACCOUNT_CONFIRM_EMAIL_CHANGE_ROUTE", {
-    method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ email, token }),
+    body: { email, token },
   });
 
   return data;

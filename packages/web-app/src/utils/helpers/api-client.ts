@@ -5,15 +5,29 @@ import { getBaseApiUrl } from "./get-api-base-url";
 
 type RouteDefinitionKey = keyof typeof ROUTE_DEFINITIONS;
 
+type RouteBody<T extends RouteDefinitionKey> =
+  (typeof ROUTE_DEFINITIONS)[T] extends { request: infer R }
+    ? z.infer<R> | FormData
+    : FormData | undefined;
+
+// Custom RequestInit that requires body for routes that need it and doesn't allow method to be overridden
+type CustomRequestInit<T extends RouteDefinitionKey> = Omit<
+  RequestInit,
+  "method" | "body"
+> & {
+  body?: RouteBody<T>;
+};
+
 export const client = async <T extends RouteDefinitionKey>(
   key: T,
-  options: RequestInit = {},
+  options: CustomRequestInit<T> = {},
   request?: Request
 ): Promise<{
   data: z.infer<(typeof ROUTE_DEFINITIONS)[T]["response"]>;
   response: Response;
 }> => {
   const route = ROUTE_DEFINITIONS[key];
+  const { body, ...requestOptions } = options;
   const endpoint = route.path;
 
   const base = getBaseApiUrl();
@@ -33,16 +47,19 @@ export const client = async <T extends RouteDefinitionKey>(
 
   // If the body is FormData, remove content-type header to let browser set it automatically
   // with the correct boundary
-  if (options.body instanceof FormData) {
+  if (body instanceof FormData) {
     delete headers["content-type"];
+  } else if (body && typeof body === "object") {
+    // Set content-type for JSON bodies
+    headers["content-type"] = "application/json";
   }
 
   // Merge with any options headers
   if (options?.headers) {
     Object.entries(options.headers).forEach(([key, value]) => {
-      // Don't override content-type if we're sending FormData
+      // Don't override content-type if we're sending FormData or JSON
       if (
-        options.body instanceof FormData &&
+        (body instanceof FormData || (body && typeof body === "object")) &&
         key.toLowerCase() === "content-type"
       ) {
         return;
@@ -61,7 +78,7 @@ export const client = async <T extends RouteDefinitionKey>(
     base.includes("http://") && typeof window === "undefined";
 
   // CSRF token logic - only send when actually needed for security
-  const method = options.method || request?.method || "GET";
+  const method = route.method; // This is retrieved from the route definition, which is generated
   const isGetRequest = method === "GET";
 
   // Skip CSRF for GET requests (read-only, safe operations)
@@ -131,8 +148,24 @@ export const client = async <T extends RouteDefinitionKey>(
   const url = endpoint.startsWith("/")
     ? `${base}${endpoint}`
     : `${base}/${endpoint}`;
+
+  // Prepare the body for the request
+  let finalRequestBody: string | FormData | undefined;
+  if (body && typeof body === "object" && !(body instanceof FormData)) {
+    finalRequestBody = JSON.stringify(body);
+  } else if (body instanceof FormData) {
+    finalRequestBody = body;
+  }
+
+  // If the method is GET, we don't need to send a body
+  if (route.method === "GET") {
+    finalRequestBody = undefined;
+  }
+
   const response = await fetch(url, {
-    ...options,
+    ...requestOptions,
+    method: route.method,
+    ...(finalRequestBody && { body: finalRequestBody }),
     credentials: "include",
     headers,
   });

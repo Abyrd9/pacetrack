@@ -13,8 +13,7 @@ export const getAccountByIdServerFn = createServerFn({ method: "POST" })
     const resp = await client(
       "ACCOUNT_GET_BY_ID_ROUTE",
       {
-        method: "POST",
-        body: JSON.stringify({ accountId: accountId }),
+        body: { accountId: accountId },
         headers: {
           "Content-Type": "application/json",
         },

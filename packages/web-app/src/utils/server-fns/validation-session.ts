@@ -9,7 +9,7 @@ export const validateSessionServerFn = createServerFn({
   const { data, response } = await client(
     "VALIDATE_SESSION_ROUTE",
     {
-      method: "POST",
+      body: {},
     },
     request
   );

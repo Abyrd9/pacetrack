@@ -34,7 +34,6 @@ export function UpdateTenantAvatarForm({
   } = useMutation({
     mutationFn: async (form: FormData) => {
       const { data } = await client("TENANT_UPDATE_ROUTE", {
-        method: "POST",
         body: form,
         headers: {
           "Content-Type": "multipart/form-data",

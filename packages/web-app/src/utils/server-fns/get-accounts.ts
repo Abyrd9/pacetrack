@@ -10,8 +10,7 @@ export const getAccountsServerFn = createServerFn({ method: "POST" }).handler(
     const resp = await client(
       "ACCOUNT_GET_ROUTE",
       {
-        method: "POST",
-        body: JSON.stringify({}),
+        body: {},
         headers: {
           "Content-Type": "application/json",
         },

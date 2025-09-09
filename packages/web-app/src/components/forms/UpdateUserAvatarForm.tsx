@@ -29,7 +29,6 @@ export function UpdateUserAvatarForm({
   } = useMutation({
     mutationFn: async (form: FormData) => {
       const { data } = await client("ACCOUNT_UPDATE_ROUTE", {
-        method: "POST",
         body: form,
         headers: {
           "Content-Type": "multipart/form-data",

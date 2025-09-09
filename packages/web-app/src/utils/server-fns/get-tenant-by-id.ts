@@ -13,8 +13,7 @@ export const getTenantByIdServerFn = createServerFn({ method: "POST" })
     const resp = await client(
       "TENANT_GET_BY_ID_ROUTE",
       {
-        method: "POST",
-        body: JSON.stringify({ tenantId: tenantId }),
+        body: { tenantId: tenantId },
         headers: {
           "Content-Type": "application/json",
         },

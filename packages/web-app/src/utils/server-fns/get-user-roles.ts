@@ -8,13 +8,7 @@ export const getAccountRolesServerFn = createServerFn({
   method: "GET",
 }).handler(async () => {
   const request = await getWebRequest();
-  const resp = await client(
-    "ACCOUNT_GET_ROLES_ROUTE",
-    {
-      method: "GET",
-    },
-    request
-  );
+  const resp = await client("ACCOUNT_GET_ROLES_ROUTE", {}, request);
 
   if (resp.data.status === "error") {
     console.error("Failed to get user roles", resp.data.errors);

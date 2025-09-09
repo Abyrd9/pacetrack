@@ -31,7 +31,6 @@ export const ForgotPasswordForm = ({
 
       const form = new FormData(element);
       const { data } = await client("FORGOT_PASSWORD_ROUTE", {
-        method: "POST",
         body: form,
       });
 

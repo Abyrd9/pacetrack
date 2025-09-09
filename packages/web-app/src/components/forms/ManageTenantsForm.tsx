@@ -34,7 +34,6 @@ export function ManageTenantsForm({
   const { mutate: onSubmit, isPending } = useMutation({
     mutationFn: async (form: FormData) => {
       const { data } = await client("TENANT_DELETE_ROUTE", {
-        method: "POST",
         body: form,
         headers: {
           "Content-Type": "multipart/form-data",

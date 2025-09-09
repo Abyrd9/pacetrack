@@ -26,7 +26,7 @@ export type UserGetByIdRouteResponse = RouteResponse<
 
 export const USER_GET_BY_ID_ROUTE = {
   path: USER_GET_BY_ID_ROUTE_PATH,
-  method: "GET",
+  method: "POST",
   request: UserGetByIdRequestSchema,
   response: z.union([
     UserGetByIdActionDataSuccessSchema,

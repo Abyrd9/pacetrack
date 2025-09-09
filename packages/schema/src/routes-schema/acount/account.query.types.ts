@@ -39,7 +39,7 @@ export type AccountQueryRouteResponse = RouteResponse<
 
 export const ACCOUNT_QUERY_ROUTE = {
   path: ACCOUNT_QUERY_ROUTE_PATH,
-  method: "GET",
+  method: "POST",
   request: AccountQueryRequestSchema,
   response: z.union([
     AccountQueryActionDataSuccessSchema,

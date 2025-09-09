@@ -20,7 +20,6 @@ export function ChangeEmailForm({ currentEmail }: ChangeEmailFormProps) {
   } = useMutation({
     mutationFn: async (form: FormData) => {
       const { data } = await client("ACCOUNT_CHANGE_EMAIL_ROUTE", {
-        method: "POST",
         body: form,
         headers: {
           "Content-Type": "multipart/form-data",

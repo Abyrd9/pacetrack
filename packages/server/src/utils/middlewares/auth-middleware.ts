@@ -51,10 +51,9 @@ export async function authMiddleware(app: App) {
       }
 
       if (!token) {
-        const requestOriginUrl = c.req.header("x-request-origin");
-        const path = requestOriginUrl || "";
+        const requestOriginUrl = c.req.header("x-request-origin") || "";
 
-        if (!PUBLIC_WEB_ROUTES.includes(path)) {
+        if (!PUBLIC_WEB_ROUTES.includes(requestOriginUrl)) {
           return c.json(
             {
               key: c.req.path,

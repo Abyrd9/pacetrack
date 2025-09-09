@@ -38,7 +38,6 @@ export function NewTenantForm({
   } = useMutation({
     mutationFn: async (form: FormData) => {
       const { data } = await client("TENANT_CREATE_ROUTE", {
-        method: "POST",
         body: form,
         headers: {
           "Content-Type": "multipart/form-data",
