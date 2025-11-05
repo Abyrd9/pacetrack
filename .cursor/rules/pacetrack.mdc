@@ -1,0 +1,297 @@
+---
+alwaysApply: false
+---
+# PaceTrack Data Model Specification
+
+## Overview
+PaceTrack is a universal pipeline velocity tracking system. It uses a 
+template-instance pattern where templates define the structure and instances 
+contain actual data.
+
+## Core Concepts
+
+- **Pipeline Template**: The blueprint defining steps and custom fields
+- **Pipeline Instance**: An active run based on a template (e.g., "Q4 2024 
+  Sales")
+- **Step**: A stage in the process (defined in template)
+- **Item**: The entity moving through the pipeline steps (e.g., a deal, 
+  candidate, ticket)
+- **Custom Field**: Configurable data fields that can be attached to 
+  templates, instances, or items
+
+## Entity Definitions
+
+### Pipeline Template
+
+The reusable blueprint for a process.
+
+**Properties:**
+- `id`: Unique identifier
+- `name`: Template name (e.g., "Sales Process", "Engineering Hiring")
+- `description`: Optional description
+- `createdBy`: User ID of creator
+- `createdAt`: Creation timestamp
+- `updatedAt`: Last update timestamp
+- `steps`: Array of Step definitions (ordered)
+- `fieldDefinitions`: Array of Custom Field definitions
+- `isActive`: Boolean (can be archived)
+
+**Relationships:**
+- Has many Steps
+- Has many Field Definitions
+- Belongs to User (creator)
+- Has many Pipeline Instances
+
+### Pipeline Instance
+
+An actual active run of a pipeline template.
+
+**Properties:**
+- `id`: Unique identifier
+- `templateId`: Reference to Pipeline Template
+- `name`: Instance name (e.g., "Q4 2024 Sales Pipeline")
+- `startDate`: When this pipeline started (required)
+- `endDate`: When this pipeline ends/ended (optional)
+- `status`: Enum (`active`, `paused`, `completed`, `archived`)
+- `createdBy`: User ID of creator
+- `createdAt`: Creation timestamp
+- `updatedAt`: Last update timestamp
+- `fieldValues`: Array of field values for pipeline-level custom fields
+
+**Relationships:**
+- Belongs to Pipeline Template
+- Has many Items
+- Belongs to User (creator)
+- Has many assigned Users/Teams
+
+### Step
+
+A stage definition within a pipeline template.
+
+**Properties:**
+- `id`: Unique identifier
+- `templateId`: Reference to Pipeline Template
+- `name`: Step name (e.g., "Qualified", "Interview", "Proposal")
+- `order`: Integer for ordering (0-indexed)
+- `description`: Optional description
+- `targetDuration`: Optional expected duration in days
+- `color`: Optional hex color for UI
+
+**Relationships:**
+- Belongs to Pipeline Template
+- Can be assigned to Users/Teams (who owns this step)
+
+### Item
+
+The entity moving through pipeline steps.
+
+**Properties:**
+- `id`: Unique identifier
+- `pipelineId`: Reference to Pipeline Instance
+- `title`: Item name/title
+- `currentStepId`: Reference to current Step
+- `currentStepEnteredAt`: Timestamp when entered current step
+- `ownerId`: Primary responsible User ID
+- `priority`: Enum (`low`, `medium`, `high`, `urgent`)
+- `status`: Enum (`active`, `won`, `lost`, `archived`)
+- `createdAt`: Creation timestamp
+- `updatedAt`: Last update timestamp
+- `completedAt`: Optional completion timestamp
+- `fieldValues`: Array of field values for item-level custom fields
+
+**Relationships:**
+- Belongs to Pipeline Instance
+- Currently in one Step
+- Belongs to User (owner)
+- Has many Item Transitions (history)
+- Has many collaborating Users
+
+### Item Transition
+
+Historical record of an item moving between steps.
+
+**Properties:**
+- `id`: Unique identifier
+- `itemId`: Reference to Item
+- `fromStepId`: Reference to Step (null if first step)
+- `toStepId`: Reference to Step
+- `transitionedAt`: Timestamp of transition
+- `transitionedBy`: User ID who moved it
+- `durationInStep`: Calculated days in previous step (null if first)
+- `notes`: Optional notes about the transition
+
+**Relationships:**
+- Belongs to Item
+- References two Steps (from/to)
+- Belongs to User (who made transition)
+
+### Custom Field Definition
+
+Defines a configurable field in a template.
+
+**Properties:**
+- `id`: Unique identifier
+- `templateId`: Reference to Pipeline Template
+- `name`: Field name (e.g., "Deal Value", "Salary Range")
+- `type`: Field type enum (see Field Types below)
+- `appliesTo`: Enum (`pipeline_instance`, `item`)
+- `required`: Boolean
+- `defaultValue`: Optional default value
+- `config`: JSON object for type-specific configuration
+- `order`: Integer for display ordering
+
+**Field Types:**
+```typescript
+type FieldType =
+  | "text"          // Short text input
+  | "textarea"      // Long text input
+  | "number"        // Generic number
+  | "currency"      // Monetary value
+  | "percentage"    // Percentage value
+  | "date"          // Single date
+  | "daterange"     // Start and end date
+  | "dropdown"      // Single select from options
+  | "multiselect"   // Multiple select from options
+  | "boolean"       // Yes/No checkbox
+  | "user"          // Reference to a User
+  | "url"           // URL/link
+  | "email"         // Email address
+```
+
+**Config Examples:**
+```typescript
+// Currency
+{
+  currency: "USD",
+  min: 0,
+  max: null
+}
+
+// Dropdown/Multiselect
+{
+  options: ["Option 1", "Option 2", "Option 3"],
+  allowCustom: false
+}
+
+// Number
+{
+  min: 0,
+  max: 100,
+  step: 1
+}
+```
+
+**Relationships:**
+- Belongs to Pipeline Template
+
+### Custom Field Value
+
+Actual value for a custom field on an instance or item.
+
+**Properties:**
+- `id`: Unique identifier
+- `fieldDefinitionId`: Reference to Custom Field Definition
+- `entityType`: Enum (`pipeline_instance`, `item`)
+- `entityId`: ID of the pipeline instance or item
+- `value`: The actual value (type depends on field definition)
+
+**Relationships:**
+- References Custom Field Definition
+- Belongs to Pipeline Instance OR Item
+
+### User
+
+System users who interact with pipelines.
+
+**Properties:**
+- `id`: Unique identifier
+- `email`: Email address
+- `name`: Full name
+- `role`: Enum (`admin`, `manager`, `member`)
+- `createdAt`: Creation timestamp
+- `isActive`: Boolean
+
+**Relationships:**
+- Can own many Pipeline Templates
+- Can own many Pipeline Instances
+- Can own many Items
+- Can be assigned to many Steps
+- Can be assigned to many Pipeline Instances
+
+### Team
+
+Groups of users for permissions and assignments.
+
+**Properties:**
+- `id`: Unique identifier
+- `name`: Team name
+- `description`: Optional description
+- `createdAt`: Creation timestamp
+
+**Relationships:**
+- Has many Users (members)
+- Can be assigned to many Pipeline Instances
+- Can be assigned to many Steps
+
+## Key Business Rules
+
+### Template Updates
+- When a Pipeline Template is updated, existing Pipeline Instances maintain 
+  their structure
+- New Pipeline Instances use the updated template
+- Option to "apply changes to existing instances" can be provided for field 
+  updates
+
+### Field Value Inheritance
+- Pipeline-level fields: Set once on instance, inherited by all items (can 
+  be read-only or editable)
+- Item-level fields: Unique per item, pre-filled with defaults from template
+
+### Item Transitions
+- When an item moves to a new step, create an Item Transition record
+- Calculate `durationInStep` based on timestamps
+- Track who made the change and when
+
+### Velocity Calculations
+- Average time in step = average of all items' `durationInStep` for that 
+  step
+- Items "at risk" = current step duration > (average * threshold multiplier)
+- Pipeline velocity = average total time from first step to completion
+
+### Permissions
+- Template creators can edit their templates
+- Pipeline instance owners can manage their pipelines
+- Item owners can edit their items
+- Admins can access everything
+- Teams provide group-based access control
+
+## API Considerations
+
+### Key Endpoints Needed
+- CRUD for Pipeline Templates
+- CRUD for Pipeline Instances (with template cloning)
+- CRUD for Items
+- Transition endpoint: Move item to new step
+- Analytics endpoints: velocity metrics, at-risk items, stage conversion rates
+- Bulk operations: Archive items, close pipelines
+
+### Integrations
+- Future: CRM integrations (Salesforce, HubSpot)
+- Future: Calendar integrations for activity tracking
+- Future: Email integrations for last contact detection
+
+## UI Components Needed
+
+### Views
+- Template library and editor
+- Pipeline instance dashboard (Kanban-style board)
+- Item detail view with custom fields
+- Analytics dashboard with velocity metrics
+- Reports: conversion rates, bottlenecks, rep performance
+
+### Key Features
+- Drag-and-drop items between steps
+- Filtering and sorting by custom fields
+- Alerts for at-risk items
+- Historical timeline view per item
+- Customizable field forms

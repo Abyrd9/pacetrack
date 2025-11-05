@@ -6,7 +6,7 @@ import {
 import type { SessionGetAccountsMetaRouteResponse } from "@pacetrack/schema/src/routes-schema/session/session.get-accounts-meta.types";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Link, useNavigate } from "@tanstack/react-router";
-import { Layout, LogOut, Settings } from "lucide-react";
+import { Layout, LogOut, Settings, Workflow } from "lucide-react";
 import { Button } from "~/components/primitives/button";
 import { client } from "~/utils/helpers/api-client";
 import { Dialog } from "./primitives/dialog";
@@ -60,6 +60,13 @@ export function Sidebar({
         >
           <Layout className="w-4 h-4" />
           <span>Dashboard</span>
+        </Link>
+        <Link
+          to="/pipelines"
+          className="flex items-center gap-3 px-3 py-2 text-sm rounded-md hover:bg-gray-100 dark:hover:bg-gray-800"
+        >
+          <Workflow className="w-4 h-4" />
+          <span>Pipelines</span>
         </Link>
       </nav>
       <div className="p-4 border-t border-background-100 space-y-2.5">

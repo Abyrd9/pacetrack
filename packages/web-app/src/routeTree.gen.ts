@@ -20,6 +20,10 @@ import { Route as AuthSignInRouteImport } from './routes/auth.sign-in'
 import { Route as AuthForgotPasswordRouteImport } from './routes/auth.forgot-password'
 import { Route as ApiHealthcheckRouteImport } from './routes/api.healthcheck'
 import { Route as AppSettingsRouteImport } from './routes/_app.settings'
+import { Route as AppPipelinesRouteImport } from './routes/_app.pipelines'
+import { Route as AppPipelinesIndexRouteImport } from './routes/_app.pipelines.index'
+import { Route as AppPipelinesNewRouteImport } from './routes/_app.pipelines.new'
+import { Route as AppPipelinesIdEditRouteImport } from './routes/_app.pipelines.$id.edit'
 
 const AuthRoute = AuthRouteImport.update({
   id: '/auth',
@@ -76,9 +80,30 @@ const AppSettingsRoute = AppSettingsRouteImport.update({
   path: '/settings',
   getParentRoute: () => AppRoute,
 } as any)
+const AppPipelinesRoute = AppPipelinesRouteImport.update({
+  id: '/pipelines',
+  path: '/pipelines',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppPipelinesIndexRoute = AppPipelinesIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => AppPipelinesRoute,
+} as any)
+const AppPipelinesNewRoute = AppPipelinesNewRouteImport.update({
+  id: '/new',
+  path: '/new',
+  getParentRoute: () => AppPipelinesRoute,
+} as any)
+const AppPipelinesIdEditRoute = AppPipelinesIdEditRouteImport.update({
+  id: '/$id/edit',
+  path: '/$id/edit',
+  getParentRoute: () => AppPipelinesRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/auth': typeof AuthRouteWithChildren
+  '/pipelines': typeof AppPipelinesRouteWithChildren
   '/settings': typeof AppSettingsRoute
   '/api/healthcheck': typeof ApiHealthcheckRoute
   '/auth/forgot-password': typeof AuthForgotPasswordRoute
@@ -88,6 +113,9 @@ export interface FileRoutesByFullPath {
   '/': typeof AppIndexRoute
   '/auth/': typeof AuthIndexRoute
   '/callback': typeof CallbackIndexRoute
+  '/pipelines/new': typeof AppPipelinesNewRoute
+  '/pipelines/': typeof AppPipelinesIndexRoute
+  '/pipelines/$id/edit': typeof AppPipelinesIdEditRoute
 }
 export interface FileRoutesByTo {
   '/settings': typeof AppSettingsRoute
@@ -99,11 +127,15 @@ export interface FileRoutesByTo {
   '/': typeof AppIndexRoute
   '/auth': typeof AuthIndexRoute
   '/callback': typeof CallbackIndexRoute
+  '/pipelines/new': typeof AppPipelinesNewRoute
+  '/pipelines': typeof AppPipelinesIndexRoute
+  '/pipelines/$id/edit': typeof AppPipelinesIdEditRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/_app': typeof AppRouteWithChildren
   '/auth': typeof AuthRouteWithChildren
+  '/_app/pipelines': typeof AppPipelinesRouteWithChildren
   '/_app/settings': typeof AppSettingsRoute
   '/api/healthcheck': typeof ApiHealthcheckRoute
   '/auth/forgot-password': typeof AuthForgotPasswordRoute
@@ -113,11 +145,15 @@ export interface FileRoutesById {
   '/_app/': typeof AppIndexRoute
   '/auth/': typeof AuthIndexRoute
   '/callback/': typeof CallbackIndexRoute
+  '/_app/pipelines/new': typeof AppPipelinesNewRoute
+  '/_app/pipelines/': typeof AppPipelinesIndexRoute
+  '/_app/pipelines/$id/edit': typeof AppPipelinesIdEditRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/auth'
+    | '/pipelines'
     | '/settings'
     | '/api/healthcheck'
     | '/auth/forgot-password'
@@ -127,6 +163,9 @@ export interface FileRouteTypes {
     | '/'
     | '/auth/'
     | '/callback'
+    | '/pipelines/new'
+    | '/pipelines/'
+    | '/pipelines/$id/edit'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/settings'
@@ -138,10 +177,14 @@ export interface FileRouteTypes {
     | '/'
     | '/auth'
     | '/callback'
+    | '/pipelines/new'
+    | '/pipelines'
+    | '/pipelines/$id/edit'
   id:
     | '__root__'
     | '/_app'
     | '/auth'
+    | '/_app/pipelines'
     | '/_app/settings'
     | '/api/healthcheck'
     | '/auth/forgot-password'
@@ -151,6 +194,9 @@ export interface FileRouteTypes {
     | '/_app/'
     | '/auth/'
     | '/callback/'
+    | '/_app/pipelines/new'
+    | '/_app/pipelines/'
+    | '/_app/pipelines/$id/edit'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -240,15 +286,61 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppSettingsRouteImport
       parentRoute: typeof AppRoute
     }
+    '/_app/pipelines': {
+      id: '/_app/pipelines'
+      path: '/pipelines'
+      fullPath: '/pipelines'
+      preLoaderRoute: typeof AppPipelinesRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/pipelines/': {
+      id: '/_app/pipelines/'
+      path: '/'
+      fullPath: '/pipelines/'
+      preLoaderRoute: typeof AppPipelinesIndexRouteImport
+      parentRoute: typeof AppPipelinesRoute
+    }
+    '/_app/pipelines/new': {
+      id: '/_app/pipelines/new'
+      path: '/new'
+      fullPath: '/pipelines/new'
+      preLoaderRoute: typeof AppPipelinesNewRouteImport
+      parentRoute: typeof AppPipelinesRoute
+    }
+    '/_app/pipelines/$id/edit': {
+      id: '/_app/pipelines/$id/edit'
+      path: '/$id/edit'
+      fullPath: '/pipelines/$id/edit'
+      preLoaderRoute: typeof AppPipelinesIdEditRouteImport
+      parentRoute: typeof AppPipelinesRoute
+    }
   }
 }
 
+interface AppPipelinesRouteChildren {
+  AppPipelinesNewRoute: typeof AppPipelinesNewRoute
+  AppPipelinesIndexRoute: typeof AppPipelinesIndexRoute
+  AppPipelinesIdEditRoute: typeof AppPipelinesIdEditRoute
+}
+
+const AppPipelinesRouteChildren: AppPipelinesRouteChildren = {
+  AppPipelinesNewRoute: AppPipelinesNewRoute,
+  AppPipelinesIndexRoute: AppPipelinesIndexRoute,
+  AppPipelinesIdEditRoute: AppPipelinesIdEditRoute,
+}
+
+const AppPipelinesRouteWithChildren = AppPipelinesRoute._addFileChildren(
+  AppPipelinesRouteChildren,
+)
+
 interface AppRouteChildren {
+  AppPipelinesRoute: typeof AppPipelinesRouteWithChildren
   AppSettingsRoute: typeof AppSettingsRoute
   AppIndexRoute: typeof AppIndexRoute
 }
 
 const AppRouteChildren: AppRouteChildren = {
+  AppPipelinesRoute: AppPipelinesRouteWithChildren,
   AppSettingsRoute: AppSettingsRoute,
   AppIndexRoute: AppIndexRoute,
 }

@@ -8,6 +8,8 @@ export type TenantAction =
 	| "manage_roles"
 	| "manage_accounts"
 	| "manage_settings"
+	| "manage_templates"
+	| "manage_pipelines"
 	| "view_analytics";
 
 export type Action = AccountAction | TenantAction;
@@ -25,8 +27,9 @@ export const DEFAULT_ROLES = {
 			"manage_roles",
 			"manage_accounts",
 			"manage_settings",
+			"manage_templates",
+			"manage_pipelines",
 			"view_analytics",
-			"manage_content",
 		] as Action[],
 	},
 	BILLING_ADMIN: {
@@ -45,6 +48,8 @@ export const DEFAULT_ROLES = {
 			"manage_roles",
 			"manage_accounts",
 			"manage_settings",
+			"manage_templates",
+			"manage_pipelines",
 			"view_analytics",
 		] as Action[],
 	},

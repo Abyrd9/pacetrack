@@ -25,6 +25,17 @@ import { resetPasswordValidateRoute } from "./api-routes/auth/reset-password-val
 import { signInRoute } from "./api-routes/auth/sign-in";
 import { signOutRoute } from "./api-routes/auth/sign-out";
 import { signUpRoute } from "./api-routes/auth/sign-up";
+import { pipelineInstanceCreateRoute } from "./api-routes/pipeline-instance/pipeline-instance.create";
+import { pipelineInstanceDeleteRoute } from "./api-routes/pipeline-instance/pipeline-instance.delete";
+import { pipelineInstanceGetRoute } from "./api-routes/pipeline-instance/pipeline-instance.get";
+import { pipelineInstanceGetByIdRoute } from "./api-routes/pipeline-instance/pipeline-instance.get-by-id";
+import { pipelineInstanceGetByTemplateIdRoute } from "./api-routes/pipeline-instance/pipeline-instance.get-by-template-id";
+import { pipelineInstanceUpdateRoute } from "./api-routes/pipeline-instance/pipeline-instance.update";
+import { pipelineTemplateCreateRoute } from "./api-routes/pipeline-template/pipeline-template.create";
+import { pipelineTemplateDeleteRoute } from "./api-routes/pipeline-template/pipeline-template.delete";
+import { pipelineTemplateGetRoute } from "./api-routes/pipeline-template/pipeline-template.get";
+import { pipelineTemplateGetByIdRoute } from "./api-routes/pipeline-template/pipeline-template.get-by-id";
+import { pipelineTemplateUpdateRoute } from "./api-routes/pipeline-template/pipeline-template.update";
 import { serveRoute } from "./api-routes/serve/serve";
 import { sessionCreateAccountRoute } from "./api-routes/session/session.create-account";
 import { sessionCreateTenantRoute } from "./api-routes/session/session.create-tenant";
@@ -37,6 +48,11 @@ import { sessionRevokeAllRoute } from "./api-routes/session/session.revoke-all";
 import { sessionSwitchAccountRoute } from "./api-routes/session/session.switch-account";
 import { sessionSwitchTenantRoute } from "./api-routes/session/session.switch-tenant";
 import { validateSessionRoute } from "./api-routes/session/session.validate";
+import { stepTemplateCreateRoute } from "./api-routes/step-template/step-template.create";
+import { stepTemplateDeleteRoute } from "./api-routes/step-template/step-template.delete";
+import { stepTemplateGetRoute } from "./api-routes/step-template/step-template.get";
+import { stepTemplateGetByIdRoute } from "./api-routes/step-template/step-template.get-by-id";
+import { stepTemplateUpdateRoute } from "./api-routes/step-template/step-template.update";
 import { tenantCreateRoute } from "./api-routes/tenant/tenant.create";
 import { tenantDeleteRoute } from "./api-routes/tenant/tenant.delete";
 import { tenantGetRoute } from "./api-routes/tenant/tenant.get";
@@ -55,13 +71,13 @@ import { securityHeadersMiddleware } from "./utils/middlewares/security-headers-
 import { serverTimingMiddleware } from "./utils/middlewares/server-timing-middleware";
 
 declare module "hono" {
-  interface ContextVariableMap {
-    user_id: string;
-    account_id: string;
-    tenant_id: string;
-    role_id: string;
-    session: Session;
-  }
+	interface ContextVariableMap {
+		user_id: string;
+		account_id: string;
+		tenant_id: string;
+		role_id: string;
+		session: Session;
+	}
 }
 
 const app = new Hono();
@@ -77,37 +93,37 @@ csrfMiddleware(app);
 
 // Healthcheck Route (no auth required)
 app.get("/api/healthcheck", (c) => {
-  return c.json({
-    status: "ok",
-  });
+	return c.json({
+		status: "ok",
+	});
 });
 
 // Redis Healthcheck Route (no auth required)
 app.get("/api/healthcheck/redis", async (c) => {
-  try {
-    const isHealthy = await checkRedisHealth();
+	try {
+		const isHealthy = await checkRedisHealth();
 
-    return c.json({
-      status: isHealthy ? "ok" : "error",
-      redis: {
-        connected: isHealthy,
-        timestamp: new Date().toISOString(),
-      },
-    });
-  } catch (error) {
-    console.error("Redis health check error:", error);
-    return c.json(
-      {
-        status: "error",
-        redis: {
-          connected: false,
-          error: error instanceof Error ? error.message : "Unknown error",
-          timestamp: new Date().toISOString(),
-        },
-      },
-      500
-    );
-  }
+		return c.json({
+			status: isHealthy ? "ok" : "error",
+			redis: {
+				connected: isHealthy,
+				timestamp: new Date().toISOString(),
+			},
+		});
+	} catch (error) {
+		console.error("Redis health check error:", error);
+		return c.json(
+			{
+				status: "error",
+				redis: {
+					connected: false,
+					error: error instanceof Error ? error.message : "Unknown error",
+					timestamp: new Date().toISOString(),
+				},
+			},
+			500,
+		);
+	}
 });
 
 // Authentication Routes (no auth required)
@@ -167,53 +183,75 @@ accountGroupDeleteRoute(app);
 accountGroupAddAccountsRoute(app);
 accountGroupRemoveAccountsRoute(app);
 
+// Pipeline Template Routes
+pipelineTemplateCreateRoute(app);
+pipelineTemplateUpdateRoute(app);
+pipelineTemplateDeleteRoute(app);
+pipelineTemplateGetRoute(app);
+pipelineTemplateGetByIdRoute(app);
+
+// Pipeline Instance Routes
+pipelineInstanceCreateRoute(app);
+pipelineInstanceUpdateRoute(app);
+pipelineInstanceDeleteRoute(app);
+pipelineInstanceGetRoute(app);
+pipelineInstanceGetByIdRoute(app);
+pipelineInstanceGetByTemplateIdRoute(app);
+
+// Step Template Routes
+stepTemplateCreateRoute(app);
+stepTemplateUpdateRoute(app);
+stepTemplateDeleteRoute(app);
+stepTemplateGetRoute(app);
+stepTemplateGetByIdRoute(app);
+
 // Serve Route (no auth required)
 serveRoute(app);
 
 // Start the server only when this file is executed directly (not when imported) and the port is set
 // Docs about import.meta.main: https://bun.sh/docs/api/import-meta
 if (import.meta.main && process.env.INTERNAL_PORT) {
-  const port = Number(process.env.INTERNAL_PORT);
+	const port = Number(process.env.INTERNAL_PORT);
 
-  // Graceful shutdown handler
-  const server = Bun.serve({
-    fetch: app.fetch,
-    port,
-    hostname: "::", // Bind to IPv6 for Railway private networking
-  });
+	// Graceful shutdown handler
+	const server = Bun.serve({
+		fetch: app.fetch,
+		port,
+		hostname: "::", // Bind to IPv6 for Railway private networking
+	});
 
-  console.log(`Server listening on [::]:${port}`);
+	console.log(`Server listening on [::]:${port}`);
 
-  // Handle graceful shutdown
-  process.on("SIGINT", async () => {
-    console.log("Received SIGINT, shutting down gracefully...");
+	// Handle graceful shutdown
+	process.on("SIGINT", async () => {
+		console.log("Received SIGINT, shutting down gracefully...");
 
-    try {
-      await closeRedisConnection();
-      console.log("Redis connection closed");
-    } catch (error) {
-      console.error("Error closing Redis connection:", error);
-    }
+		try {
+			await closeRedisConnection();
+			console.log("Redis connection closed");
+		} catch (error) {
+			console.error("Error closing Redis connection:", error);
+		}
 
-    server.stop();
-    console.log("Server stopped");
-    process.exit(0);
-  });
+		server.stop();
+		console.log("Server stopped");
+		process.exit(0);
+	});
 
-  process.on("SIGTERM", async () => {
-    console.log("Received SIGTERM, shutting down gracefully...");
+	process.on("SIGTERM", async () => {
+		console.log("Received SIGTERM, shutting down gracefully...");
 
-    try {
-      await closeRedisConnection();
-      console.log("Redis connection closed");
-    } catch (error) {
-      console.error("Error closing Redis connection:", error);
-    }
+		try {
+			await closeRedisConnection();
+			console.log("Redis connection closed");
+		} catch (error) {
+			console.error("Error closing Redis connection:", error);
+		}
 
-    server.stop();
-    console.log("Server stopped");
-    process.exit(0);
-  });
+		server.stop();
+		console.log("Server stopped");
+		process.exit(0);
+	});
 }
 
 export type App = typeof app;

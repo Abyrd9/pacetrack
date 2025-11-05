@@ -1,0 +1,9 @@
+---
+alwaysApply: true
+---
+
+This is a Typescript, TanstackStart, Tailwind project.
+The primitve components to use are in /packages/web-app/src/components/primitives
+All other components go into the /components folder in the place that makes the most sense
+
+When writing types do NOT use the "any" type. Use "unknown" if it is actually unknown. But always try ot infer or define the type.

@@ -23,6 +23,17 @@ import { ACCOUNT_QUERY_ROUTE } from "./acount/account.query.types";
 import { ACCOUNT_UPDATE_PASSWORD_ROUTE } from "./acount/account.update-password.types";
 import { ACCOUNT_UPDATE_ROUTE } from "./acount/account.update.types";
 import { FORGOT_PASSWORD_ROUTE } from "./auth/forgot-password.types";
+import { PIPELINE_INSTANCE_CREATE_ROUTE } from "./pipeline-instance/pipeline-instance.create.types";
+import { PIPELINE_INSTANCE_DELETE_ROUTE } from "./pipeline-instance/pipeline-instance.delete.types";
+import { PIPELINE_INSTANCE_GET_BY_ID_ROUTE } from "./pipeline-instance/pipeline-instance.get-by-id.types";
+import { PIPELINE_INSTANCE_GET_BY_TEMPLATE_ID_ROUTE } from "./pipeline-instance/pipeline-instance.get-by-template-id.types";
+import { PIPELINE_INSTANCE_GET_ROUTE } from "./pipeline-instance/pipeline-instance.get.types";
+import { PIPELINE_INSTANCE_UPDATE_ROUTE } from "./pipeline-instance/pipeline-instance.update.types";
+import { PIPELINE_TEMPLATE_CREATE_ROUTE } from "./pipeline-template/pipeline-template.create.types";
+import { PIPELINE_TEMPLATE_DELETE_ROUTE } from "./pipeline-template/pipeline-template.delete.types";
+import { PIPELINE_TEMPLATE_GET_BY_ID_ROUTE } from "./pipeline-template/pipeline-template.get-by-id.types";
+import { PIPELINE_TEMPLATE_GET_ROUTE } from "./pipeline-template/pipeline-template.get.types";
+import { PIPELINE_TEMPLATE_UPDATE_ROUTE } from "./pipeline-template/pipeline-template.update.types";
 import { RESET_PASSWORD_ROUTE } from "./auth/reset-password.types";
 import { RESET_PASSWORD_VALIDATE_ROUTE } from "./auth/reset-password-validate.types";
 import { SESSION_CREATE_ACCOUNT_ROUTE } from "./session/session.create-account.types";
@@ -38,6 +49,12 @@ import { SESSION_SWITCH_TENANT_ROUTE } from "./session/session.switch-tenant.typ
 import { SIGN_IN_ROUTE } from "./auth/sign-in.types";
 import { SIGN_OUT_ROUTE } from "./auth/sign-out.types";
 import { SIGN_UP_ROUTE } from "./auth/sign-up.types";
+import { STEP_GET_ROUTE } from "./step/step.get.types";
+import { STEP_TEMPLATE_CREATE_ROUTE } from "./step-template/step-template.create.types";
+import { STEP_TEMPLATE_DELETE_ROUTE } from "./step-template/step-template.delete.types";
+import { STEP_TEMPLATE_GET_BY_ID_ROUTE } from "./step-template/step-template.get-by-id.types";
+import { STEP_TEMPLATE_GET_ROUTE } from "./step-template/step-template.get.types";
+import { STEP_TEMPLATE_UPDATE_ROUTE } from "./step-template/step-template.update.types";
 import { TENANT_CREATE_ROUTE } from "./tenant/tenant.create.types";
 import { TENANT_DELETE_ROUTE } from "./tenant/tenant.delete.types";
 import { TENANT_GET_BY_ID_ROUTE } from "./tenant/tenant.get-by-id.types";
@@ -70,6 +87,17 @@ export const ROUTE_DEFINITIONS = {
   ACCOUNT_UPDATE_PASSWORD_ROUTE: ACCOUNT_UPDATE_PASSWORD_ROUTE,
   ACCOUNT_UPDATE_ROUTE: ACCOUNT_UPDATE_ROUTE,
   FORGOT_PASSWORD_ROUTE: FORGOT_PASSWORD_ROUTE,
+  PIPELINE_INSTANCE_CREATE_ROUTE: PIPELINE_INSTANCE_CREATE_ROUTE,
+  PIPELINE_INSTANCE_DELETE_ROUTE: PIPELINE_INSTANCE_DELETE_ROUTE,
+  PIPELINE_INSTANCE_GET_BY_ID_ROUTE: PIPELINE_INSTANCE_GET_BY_ID_ROUTE,
+  PIPELINE_INSTANCE_GET_BY_TEMPLATE_ID_ROUTE: PIPELINE_INSTANCE_GET_BY_TEMPLATE_ID_ROUTE,
+  PIPELINE_INSTANCE_GET_ROUTE: PIPELINE_INSTANCE_GET_ROUTE,
+  PIPELINE_INSTANCE_UPDATE_ROUTE: PIPELINE_INSTANCE_UPDATE_ROUTE,
+  PIPELINE_TEMPLATE_CREATE_ROUTE: PIPELINE_TEMPLATE_CREATE_ROUTE,
+  PIPELINE_TEMPLATE_DELETE_ROUTE: PIPELINE_TEMPLATE_DELETE_ROUTE,
+  PIPELINE_TEMPLATE_GET_BY_ID_ROUTE: PIPELINE_TEMPLATE_GET_BY_ID_ROUTE,
+  PIPELINE_TEMPLATE_GET_ROUTE: PIPELINE_TEMPLATE_GET_ROUTE,
+  PIPELINE_TEMPLATE_UPDATE_ROUTE: PIPELINE_TEMPLATE_UPDATE_ROUTE,
   RESET_PASSWORD_ROUTE: RESET_PASSWORD_ROUTE,
   RESET_PASSWORD_VALIDATE_ROUTE: RESET_PASSWORD_VALIDATE_ROUTE,
   SESSION_CREATE_ACCOUNT_ROUTE: SESSION_CREATE_ACCOUNT_ROUTE,
@@ -85,6 +113,12 @@ export const ROUTE_DEFINITIONS = {
   SIGN_IN_ROUTE: SIGN_IN_ROUTE,
   SIGN_OUT_ROUTE: SIGN_OUT_ROUTE,
   SIGN_UP_ROUTE: SIGN_UP_ROUTE,
+  STEP_GET_ROUTE: STEP_GET_ROUTE,
+  STEP_TEMPLATE_CREATE_ROUTE: STEP_TEMPLATE_CREATE_ROUTE,
+  STEP_TEMPLATE_DELETE_ROUTE: STEP_TEMPLATE_DELETE_ROUTE,
+  STEP_TEMPLATE_GET_BY_ID_ROUTE: STEP_TEMPLATE_GET_BY_ID_ROUTE,
+  STEP_TEMPLATE_GET_ROUTE: STEP_TEMPLATE_GET_ROUTE,
+  STEP_TEMPLATE_UPDATE_ROUTE: STEP_TEMPLATE_UPDATE_ROUTE,
   TENANT_CREATE_ROUTE: TENANT_CREATE_ROUTE,
   TENANT_DELETE_ROUTE: TENANT_DELETE_ROUTE,
   TENANT_GET_BY_ID_ROUTE: TENANT_GET_BY_ID_ROUTE,
