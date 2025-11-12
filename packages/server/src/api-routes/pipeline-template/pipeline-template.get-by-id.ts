@@ -1,4 +1,5 @@
 import {
+	item_template_table,
 	PIPELINE_TEMPLATE_GET_BY_ID_ROUTE,
 	pipeline_template_table,
 	step_template_table,
@@ -60,12 +61,33 @@ export function pipelineTemplateGetByIdRoute(app: App) {
 				orderBy: [asc(step_template_table.order)],
 			});
 
+			// Get item template for this pipeline template
+			const itemTemplate = await db.query.item_template_table.findFirst({
+				where: and(
+					eq(item_template_table.pipeline_template_id, id),
+					isNull(item_template_table.deleted_at),
+				),
+			});
+
+			if (!itemTemplate) {
+				return c.json(
+					PIPELINE_TEMPLATE_GET_BY_ID_ROUTE.createRouteResponse({
+						status: "error",
+						errors: {
+							global: "Item template not found for this pipeline template",
+						},
+					}),
+					404,
+				);
+			}
+
 			return c.json(
 				PIPELINE_TEMPLATE_GET_BY_ID_ROUTE.createRouteResponse({
 					status: "ok",
 					payload: {
 						...template,
 						step_templates: stepTemplates,
+						item_template: itemTemplate,
 					},
 				}),
 				200,

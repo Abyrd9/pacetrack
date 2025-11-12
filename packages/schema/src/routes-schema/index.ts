@@ -23,6 +23,10 @@ import { ACCOUNT_QUERY_ROUTE } from "./acount/account.query.types";
 import { ACCOUNT_UPDATE_PASSWORD_ROUTE } from "./acount/account.update-password.types";
 import { ACCOUNT_UPDATE_ROUTE } from "./acount/account.update.types";
 import { FORGOT_PASSWORD_ROUTE } from "./auth/forgot-password.types";
+import { ITEM_TEMPLATE_CREATE_ROUTE } from "./item-template/item-template.create.types";
+import { ITEM_TEMPLATE_DELETE_ROUTE } from "./item-template/item-template.delete.types";
+import { ITEM_TEMPLATE_GET_BY_ID_ROUTE } from "./item-template/item-template.get-by-id.types";
+import { ITEM_TEMPLATE_UPDATE_ROUTE } from "./item-template/item-template.update.types";
 import { PIPELINE_INSTANCE_CREATE_ROUTE } from "./pipeline-instance/pipeline-instance.create.types";
 import { PIPELINE_INSTANCE_DELETE_ROUTE } from "./pipeline-instance/pipeline-instance.delete.types";
 import { PIPELINE_INSTANCE_GET_BY_ID_ROUTE } from "./pipeline-instance/pipeline-instance.get-by-id.types";
@@ -87,6 +91,10 @@ export const ROUTE_DEFINITIONS = {
   ACCOUNT_UPDATE_PASSWORD_ROUTE: ACCOUNT_UPDATE_PASSWORD_ROUTE,
   ACCOUNT_UPDATE_ROUTE: ACCOUNT_UPDATE_ROUTE,
   FORGOT_PASSWORD_ROUTE: FORGOT_PASSWORD_ROUTE,
+  ITEM_TEMPLATE_CREATE_ROUTE: ITEM_TEMPLATE_CREATE_ROUTE,
+  ITEM_TEMPLATE_DELETE_ROUTE: ITEM_TEMPLATE_DELETE_ROUTE,
+  ITEM_TEMPLATE_GET_BY_ID_ROUTE: ITEM_TEMPLATE_GET_BY_ID_ROUTE,
+  ITEM_TEMPLATE_UPDATE_ROUTE: ITEM_TEMPLATE_UPDATE_ROUTE,
   PIPELINE_INSTANCE_CREATE_ROUTE: PIPELINE_INSTANCE_CREATE_ROUTE,
   PIPELINE_INSTANCE_DELETE_ROUTE: PIPELINE_INSTANCE_DELETE_ROUTE,
   PIPELINE_INSTANCE_GET_BY_ID_ROUTE: PIPELINE_INSTANCE_GET_BY_ID_ROUTE,

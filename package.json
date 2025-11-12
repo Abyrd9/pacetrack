@@ -3,7 +3,7 @@
   "scripts": {
     "typecheck": "bun run scripts/typecheck-all.ts",
     "check-updates": "bun run scripts/check-updates.ts",
-    "clean": "rm -rf node_modules && rm -rf packages/*/node_modules && bun install"
+    "clean": "rm -rf node_modules && rm -rf packages/*/node_modules"
   },
   "devDependencies": {
     "@biomejs/biome": "^2.3.3",

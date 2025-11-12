@@ -1,0 +1,1 @@
+ALTER TABLE "item_templates" ADD COLUMN "fields_definition" jsonb DEFAULT '{}'::jsonb;

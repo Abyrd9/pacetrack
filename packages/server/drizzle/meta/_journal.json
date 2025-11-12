@@ -57,6 +57,20 @@
       "when": 1762307665144,
       "tag": "0007_unique_carnage",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1762313774681,
+      "tag": "0008_fat_komodo",
+      "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1762570964186,
+      "tag": "0009_easy_mephisto",
+      "breakpoints": true
     }
   ]
 }
