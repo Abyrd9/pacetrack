@@ -3,7 +3,7 @@ import { PIPELINE_TEMPLATE_CREATE_ROUTE } from "@pacetrack/schema";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { ArrowLeft } from "lucide-react";
-import { PipelineTemplateForm } from "~/components/forms/PipelineTemplateForm";
+import { PipelineTemplateWizard } from "~/components/forms/PipelineTemplateWizard";
 import { Button } from "~/components/primitives/button";
 import { client } from "~/utils/helpers/api-client";
 
@@ -20,6 +20,8 @@ function RouteComponent() {
 			const parsed = parseZodFormData(formData, {
 				schema: PIPELINE_TEMPLATE_CREATE_ROUTE.request,
 			});
+
+			console.log(parsed);
 
 			if (!parsed.success) {
 				throw new Error("Invalid form data");
@@ -41,8 +43,8 @@ function RouteComponent() {
 	});
 
 	return (
-		<div className="container max-w-4xl py-8">
-			<div className="mb-6">
+		<div className="container py-8">
+			<div className="mb-6 max-w-8xl mx-auto">
 				<Button
 					variant="transparent"
 					onClick={() => navigate({ to: "/pipelines" })}
@@ -58,7 +60,7 @@ function RouteComponent() {
 				</p>
 			</div>
 
-			<PipelineTemplateForm
+			<PipelineTemplateWizard
 				mode="create"
 				onSubmit={mutate}
 				isPending={isPending}

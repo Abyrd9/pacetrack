@@ -1,5 +1,8 @@
 import { useZodForm } from "@abyrd9/zod-form-data";
 import { PIPELINE_TEMPLATE_CREATE_ROUTE } from "@pacetrack/schema";
+import type { FieldsDefinition } from "@pacetrack/schema/src/config-schemas/fields";
+import { FieldTypeEnum } from "@pacetrack/schema/src/config-schemas/fields";
+import type { ItemTemplate } from "@pacetrack/schema/src/db-schema/item-template";
 import type { PipelineTemplate } from "@pacetrack/schema/src/db-schema/pipeline-template";
 import type { StepTemplate } from "@pacetrack/schema/src/db-schema/step-template";
 import {
@@ -11,7 +14,7 @@ import {
 	PlusIcon,
 	Trash2Icon,
 } from "lucide-react";
-import React, { type FormEvent, useEffect, useRef, useState } from "react";
+import { type FormEvent, useEffect, useRef, useState } from "react";
 import { Button } from "~/components/primitives/button";
 import { Card } from "~/components/primitives/card";
 import { ColorPicker } from "~/components/primitives/color-picker";
@@ -20,16 +23,20 @@ import { IconPicker } from "~/components/primitives/icon-picker";
 import { Input, InputError } from "~/components/primitives/input";
 import { Label } from "~/components/primitives/label";
 import { NumberInput } from "~/components/primitives/number-input";
+import { Select } from "~/components/primitives/select";
+import { Switch } from "~/components/primitives/switch";
 import { Textarea } from "~/components/primitives/textarea";
 import { Tooltip } from "~/components/primitives/tooltip";
 import { cx } from "~/utils/helpers/cx";
 import { HandDrawnBox } from "../pipeline-visualizer/HandDrawnBox";
+import { ItemFields } from "./PipelineTemplateForm.ItemFields";
 
 type PipelineTemplateFormProps = {
 	mode: "create" | "edit";
 	initialData?: {
 		pipeline: PipelineTemplate;
 		step_templates: StepTemplate[];
+		item_template: ItemTemplate;
 	};
 	onSubmit: (data: FormData) => Promise<void> | void;
 	isPending?: boolean;
@@ -52,6 +59,25 @@ export function PipelineTemplateForm({
 						description: initialData.pipeline.description ?? "",
 						icon: initialData.pipeline.icon ?? "Sparkles",
 						iconColor: initialData.pipeline.iconColor ?? "#3b82f6",
+						item_template: {
+							name: initialData.item_template.name,
+							description: initialData.item_template.description ?? "",
+							initial_step_index: Math.max(
+								0,
+								initialData.step_templates.findIndex(
+									(step) =>
+										step.id === initialData.item_template.initial_step_id,
+								),
+							),
+							fields_definition: (
+								initialData.item_template as {
+									fields_definition?: FieldsDefinition;
+								}
+							).fields_definition ?? {
+								version: 1,
+								fields: [],
+							},
+						},
 						step_templates: initialData.step_templates.map((step) => ({
 							name: step.name,
 							description: step.description ?? "",
@@ -74,6 +100,15 @@ export function PipelineTemplateForm({
 								icon: "CircleDot",
 							},
 						],
+						item_template: {
+							name: "",
+							description: "",
+							initial_step_index: 0,
+							fields_definition: {
+								version: 1,
+								fields: [],
+							},
+						},
 					},
 	});
 
@@ -81,6 +116,9 @@ export function PipelineTemplateForm({
 	const activeEditableStep = fields.step_templates[activeEditableStepIndex];
 
 	const stepArrayHelpers = getFieldArrayHelpers("step_templates");
+	const itemFieldsArrayHelpers = getFieldArrayHelpers(
+		"item_template.fields_definition.fields",
+	);
 
 	const handleAddStep = (index?: number) => {
 		stepArrayHelpers.add(
@@ -199,56 +237,172 @@ export function PipelineTemplateForm({
 			{/* Template Details */}
 			<div className="max-w-4xl">
 				<h2 className="text-xl font-semibold mb-4">Template Details</h2>
-				<div className="space-y-4">
-					<div>
-						<Label htmlFor={fields.name.name}>Template Name & Icon</Label>
-						<div className="flex items-center gap-2 w-full">
-							<IconPicker
-								variant="button-only"
-								value={{
-									icon: fields.icon.value || "Sparkles",
-									color: fields.iconColor.value || "#3b82f6",
-								}}
-								onChange={(value) => {
-									fields.icon.onChange(value.icon);
-									fields.iconColor.onChange(value.color);
-								}}
-							/>
-							<div className="w-full">
-								<Input
-									id={fields.name.name}
-									name={fields.name.name}
-									value={fields.name.value}
-									onChange={(e) => fields.name.onChange(e.target.value)}
-									placeholder="e.g., Sales Pipeline"
-									className="w-full max-w-md"
+				<Card>
+					<div className="space-y-4">
+						<div>
+							<Label htmlFor={fields.name.name}>Template Name & Icon</Label>
+							<div className="flex items-center gap-2 w-full">
+								<IconPicker
+									variant="button-only"
+									value={{
+										icon: fields.icon.value || "Sparkles",
+										color: fields.iconColor.value || "#3b82f6",
+									}}
+									onChange={(value) => {
+										fields.icon.onChange(value.icon);
+										fields.iconColor.onChange(value.color);
+									}}
 								/>
-								{fields.name.error && (
-									<InputError>{fields.name.error}</InputError>
-								)}
-								{fields.icon.error && (
-									<InputError>{fields.icon.error}</InputError>
-								)}
+								<div className="w-full">
+									<Input
+										id={fields.name.name}
+										name={fields.name.name}
+										value={fields.name.value}
+										onChange={(e) => fields.name.onChange(e.target.value)}
+										placeholder="e.g., Sales Pipeline"
+										className="w-full max-w-md"
+									/>
+									{fields.name.error && (
+										<InputError>{fields.name.error}</InputError>
+									)}
+									{fields.icon.error && (
+										<InputError>{fields.icon.error}</InputError>
+									)}
+								</div>
 							</div>
 						</div>
-					</div>
 
-					<div>
-						<Label htmlFor={fields.description.name}>Description</Label>
-						<Textarea
-							id={fields.description.name}
-							name={fields.description.name}
-							value={fields.description.value}
-							onChange={(e) => fields.description.onChange(e.target.value)}
-							placeholder="Describe what this pipeline is used for..."
-							rows={3}
-						/>
-						{fields.description.error && (
-							<InputError>{fields.description.error}</InputError>
-						)}
+						<div>
+							<Label htmlFor={fields.description.name}>Description</Label>
+							<Textarea
+								id={fields.description.name}
+								name={fields.description.name}
+								value={fields.description.value}
+								onChange={(e) => fields.description.onChange(e.target.value)}
+								placeholder="Describe what this pipeline is used for..."
+								rows={3}
+							/>
+							{fields.description.error && (
+								<InputError>{fields.description.error}</InputError>
+							)}
+						</div>
 					</div>
-				</div>
+				</Card>
 			</div>
+
+			{/* Item Template Configuration */}
+			<div className="max-w-4xl">
+				<h2 className="text-xl font-semibold mb-4">Item Template</h2>
+				<Card>
+					<p className="text-sm text-foreground-muted mb-4">
+						Configure what type of items will move through this pipeline (e.g.,
+						"Deal", "Lead", "Project").
+					</p>
+					<div className="space-y-4">
+						<div>
+							<Label htmlFor={fields.item_template.name.name}>
+								Item Name (Singular)
+							</Label>
+							<Input
+								id={fields.item_template.name.name}
+								name={fields.item_template.name.name}
+								value={fields.item_template.name.value}
+								onChange={(e) =>
+									fields.item_template.name.onChange(e.target.value)
+								}
+								placeholder="e.g., Deal, Lead, Project"
+								className="w-full max-w-md"
+							/>
+							{fields.item_template.name.error && (
+								<InputError>{fields.item_template.name.error}</InputError>
+							)}
+						</div>
+
+						<div>
+							<Label htmlFor={fields.item_template.description.name}>
+								Item Description
+							</Label>
+							<Textarea
+								id={fields.item_template.description.name}
+								name={fields.item_template.description.name}
+								value={fields.item_template.description.value}
+								onChange={(e) =>
+									fields.item_template.description.onChange(e.target.value)
+								}
+								placeholder="Describe what this item represents..."
+								rows={2}
+							/>
+							{fields.item_template.description.error && (
+								<InputError>
+									{fields.item_template.description.error}
+								</InputError>
+							)}
+						</div>
+
+						<div>
+							<Label htmlFor={fields.item_template.initial_step_index.name}>
+								Starting Step
+							</Label>
+							<p className="text-xs text-foreground-muted mb-2">
+								New items will start at this step in the pipeline
+							</p>
+							<Select
+								value={fields.item_template.initial_step_index.value?.toString()}
+								onValueChange={(value: string) =>
+									fields.item_template.initial_step_index.onChange(
+										Number(value),
+									)
+								}
+							>
+								<Select.Trigger className="w-full max-w-sm">
+									<Select.Value placeholder="Select starting step">
+										{fields.step_templates[
+											fields.item_template.initial_step_index.value
+										]?.name.value || "Select starting step"}
+									</Select.Value>
+									<Select.Icon />
+								</Select.Trigger>
+								<Select.Portal>
+									<Select.Content>
+										<Select.ScrollUpButton />
+										<Select.Viewport>
+											{fields.step_templates.map((step, idx) => (
+												<Select.Item
+													key={`initial-step-${step.name.name}-${idx}`}
+													value={idx.toString()}
+													className="flex items-center justify-between gap-2"
+												>
+													<Select.ItemText>
+														{step.name.value || `Step ${idx + 1}`}
+													</Select.ItemText>
+													<Select.ItemIndicator />
+												</Select.Item>
+											))}
+										</Select.Viewport>
+										<Select.ScrollDownButton />
+									</Select.Content>
+								</Select.Portal>
+							</Select>
+							<input
+								type="hidden"
+								name={fields.item_template.initial_step_index.name}
+								value={fields.item_template.initial_step_index.value}
+							/>
+							{fields.item_template.initial_step_index.error && (
+								<InputError>
+									{fields.item_template.initial_step_index.error}
+								</InputError>
+							)}
+						</div>
+					</div>
+				</Card>
+			</div>
+
+			{/* Item Fields Builder */}
+			<ItemFields
+				field={fields.item_template.fields_definition.fields}
+				fieldArrayHelpers={getFieldArrayHelpers}
+			/>
 
 			{/* Pipeline Visualization */}
 			<Tooltip.Provider>
@@ -293,29 +447,34 @@ export function PipelineTemplateForm({
 													className="shrink-0 cursor-pointer"
 													onClick={() => setActiveEditableStepIndex(idx)}
 												>
-													<HandDrawnBox
-														className="w-full h-24 overflow-hidden"
-														color={step.color.value}
-														stroke={
-															activeEditableStepIndex === idx
-																? "#3b82f6"
-																: stepHasError(idx)
-																	? "#ef4444"
+													<div className="w-full">
+														<div
+															className="text-sm font-handwriting text-foreground dark:text-muted-400 px-2 truncate text-left"
+															style={{ maxWidth: `${calculatedWidth}px` }}
+														>
+															{`${idx + 1}:  ${step.name.value}` ||
+																`Step ${idx + 1}`}
+														</div>
+														<HandDrawnBox
+															className="w-full h-24"
+															color={step.color.value}
+															stroke={
+																activeEditableStepIndex === idx
+																	? "#3b82f6"
+																	: stepHasError(idx)
+																		? "#ef4444"
+																		: undefined
+															}
+															strokeWidth={
+																stepHasError(idx) ||
+																activeEditableStepIndex === idx
+																	? 3
 																	: undefined
-														}
-														strokeWidth={
-															stepHasError(idx) ||
-															activeEditableStepIndex === idx
-																? 3
-																: undefined
-														}
-														roughness={0.75}
-														bowing={1}
-													>
-														<span className="text-lg w-full h-full p-5 font-handwriting text-foreground dark:text-muted-400 block text-ellipsis overflow-hidden truncate">
-															{step.name.value || `Step ${idx + 1}`}
-														</span>
-													</HandDrawnBox>
+															}
+															roughness={0.75}
+															bowing={1}
+														/>
+													</div>
 												</button>
 											</Tooltip.Trigger>
 											<Tooltip.Portal>
@@ -356,7 +515,7 @@ export function PipelineTemplateForm({
 			</Button>
 
 			{/* Step Details */}
-			<div className="max-w-4xl">
+			<div>
 				<h2 className="text-xl font-semibold mb-4">Step Details</h2>
 
 				<div className="flex items-center gap-2 justify-between mb-2">
@@ -561,7 +720,7 @@ export function PipelineTemplateForm({
 							</div>
 						</div>
 
-						<div>
+						<div className="max-w-4xl">
 							<Label htmlFor={activeEditableStep.description.name}>
 								Description
 							</Label>

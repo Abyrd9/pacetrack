@@ -1,4 +1,5 @@
 import { z } from "zod/v4";
+import { ItemTemplateSchema } from "../../db-schema/item-template";
 import { PipelineTemplateSchema } from "../../db-schema/pipeline-template";
 import { StepTemplateSchema } from "../../db-schema/step-template";
 import { ActionDataSchema, type RouteResponse } from "../../types/generics";
@@ -18,6 +19,7 @@ const PipelineTemplateGetByIdActionDataErrorSchema = ActionDataSchema(
 const PipelineTemplateGetByIdActionDataSuccessSchema = ActionDataSchema(
 	PipelineTemplateSchema.extend({
 		step_templates: z.array(StepTemplateSchema),
+		item_template: ItemTemplateSchema,
 	}),
 	"ok",
 	PIPELINE_TEMPLATE_GET_BY_ID_ROUTE_PATH,

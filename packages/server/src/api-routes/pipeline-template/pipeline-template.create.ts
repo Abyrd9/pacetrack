@@ -1,6 +1,7 @@
 import {
 	account_metadata_table,
 	hasPermission,
+	item_template_table,
 	PIPELINE_TEMPLATE_CREATE_ROUTE,
 	pipeline_template_table,
 	role_table,
@@ -49,8 +50,14 @@ export function pipelineTemplateCreateRoute(app: App) {
 				}
 			}
 
-			const { name, description, icon, iconColor, step_templates } =
-				parsed.data;
+			const {
+				name,
+				description,
+				icon,
+				iconColor,
+				step_templates,
+				item_template,
+			} = parsed.data;
 
 			// Check permission
 			const roles = await db
@@ -127,12 +134,55 @@ export function pipelineTemplateCreateRoute(app: App) {
 						)
 						.returning();
 
+					// Validate initial_step_index
+					if (
+						item_template.initial_step_index < 0 ||
+						item_template.initial_step_index >= createStepTemplatesResp.length
+					) {
+						tx.rollback();
+						throw new Error("Invalid initial step index");
+					}
+
+					// Get the step template at the initial_step_index
+					const initialStepTemplate =
+						createStepTemplatesResp[item_template.initial_step_index];
+					if (!initialStepTemplate) {
+						tx.rollback();
+						throw new Error("Could not find initial step template");
+					}
+
+					const possibleFieldsDefinition = item_template.fields_definition
+						? item_template.fields_definition
+						: sql`'{}'::jsonb`;
+
+					// Create the item template
+					const createItemTemplateResp = await tx
+						.insert(item_template_table)
+						.values({
+							name: item_template.name,
+							description: item_template.description,
+							pipeline_template_id: template.id,
+							initial_step_id: initialStepTemplate.id,
+							fields_definition: possibleFieldsDefinition,
+							created_by: accountId,
+							created_at: sql`now()`,
+							updated_at: sql`now()`,
+						})
+						.returning();
+
+					const itemTemplate = createItemTemplateResp[0];
+					if (!itemTemplate) {
+						tx.rollback();
+						throw new Error("Failed to create item template");
+					}
+
 					return c.json(
 						PIPELINE_TEMPLATE_CREATE_ROUTE.createRouteResponse({
 							status: "ok",
 							payload: {
 								...template,
 								step_templates: createStepTemplatesResp,
+								item_template: itemTemplate,
 							},
 						}),
 						200,

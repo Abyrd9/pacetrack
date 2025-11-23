@@ -3,7 +3,7 @@ import { PIPELINE_TEMPLATE_UPDATE_ROUTE } from "@pacetrack/schema";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { ArrowLeft } from "lucide-react";
-import { PipelineTemplateForm } from "~/components/forms/PipelineTemplateForm";
+import { PipelineTemplateWizard } from "~/components/forms/PipelineTemplateWizard";
 import { Button } from "~/components/primitives/button";
 import { client } from "~/utils/helpers/api-client";
 import { getPipelineTemplateByIdQueryOptions } from "~/utils/server-fns/get-pipeline-template-by-id";
@@ -84,7 +84,7 @@ function RouteComponent() {
 
 	return (
 		<div className="container py-8">
-			<div className="mb-6 max-w-4xl">
+			<div className="mb-6 max-w-4xl mx-auto">
 				<Button
 					variant="transparent"
 					onClick={() => navigate({ to: "/pipelines" })}
@@ -99,11 +99,16 @@ function RouteComponent() {
 				</p>
 			</div>
 
-			<PipelineTemplateForm
+			<PipelineTemplateWizard
 				mode="edit"
 				initialData={{
 					pipeline: pipelineData,
 					step_templates: pipelineData.step_templates || [],
+					item_template: pipelineData.item_template || {
+						name: "",
+						description: "",
+						initial_step_id: "",
+					},
 				}}
 				onSubmit={updatePipeline}
 				isPending={isUpdatingPipeline}

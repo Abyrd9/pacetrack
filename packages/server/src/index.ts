@@ -25,6 +25,10 @@ import { resetPasswordValidateRoute } from "./api-routes/auth/reset-password-val
 import { signInRoute } from "./api-routes/auth/sign-in";
 import { signOutRoute } from "./api-routes/auth/sign-out";
 import { signUpRoute } from "./api-routes/auth/sign-up";
+import { itemTemplateCreateRoute } from "./api-routes/item-template/item-template.create";
+import { itemTemplateDeleteRoute } from "./api-routes/item-template/item-template.delete";
+import { itemTemplateGetByIdRoute } from "./api-routes/item-template/item-template.get-by-id";
+import { itemTemplateUpdateRoute } from "./api-routes/item-template/item-template.update";
 import { pipelineInstanceCreateRoute } from "./api-routes/pipeline-instance/pipeline-instance.create";
 import { pipelineInstanceDeleteRoute } from "./api-routes/pipeline-instance/pipeline-instance.delete";
 import { pipelineInstanceGetRoute } from "./api-routes/pipeline-instance/pipeline-instance.get";
@@ -204,6 +208,12 @@ stepTemplateUpdateRoute(app);
 stepTemplateDeleteRoute(app);
 stepTemplateGetRoute(app);
 stepTemplateGetByIdRoute(app);
+
+// Item Template Routes
+itemTemplateCreateRoute(app);
+itemTemplateUpdateRoute(app);
+itemTemplateDeleteRoute(app);
+itemTemplateGetByIdRoute(app);
 
 // Serve Route (no auth required)
 serveRoute(app);
